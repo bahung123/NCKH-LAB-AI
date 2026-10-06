@@ -1,0 +1,76 @@
+% styles/common.tex — cấu hình chung cho báo cáo
+% Engine: XeLaTeX. Hỗ trợ tiếng Việt qua babel; font có cơ chế fallback.
+\usepackage{fontspec}
+\IfFontExistsTF{DejaVu Serif}{%
+  \setmainfont{DejaVu Serif}%
+  \setsansfont{DejaVu Sans}%
+  \setmonofont{DejaVu Sans Mono}%
+}{}
+
+\usepackage[vietnamese]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds,calc,shadows.blur}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{fancyhdr}
+\usepackage{geometry}
+\usepackage{titlesec}
+\usepackage{caption}
+\usepackage{float}
+\usepackage[hidelinks]{hyperref}
+\usepackage{url}
+
+\geometry{a4paper,top=3.5cm,bottom=2.5cm,left=3cm,right=2cm}
+
+\captionsetup{font=small,labelfont=bf}
+\setlist{itemsep=2pt,topsep=3pt,parsep=0pt}
+
+\definecolor{vnpostgreen}{RGB}{0,120,60}
+\definecolor{vnpostdark}{RGB}{0,70,35}
+\definecolor{lightgray}{RGB}{245,245,245}
+\definecolor{boxblue}{RGB}{230,240,250}
+
+% Đánh dấu chương/mục
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\color{vnpostdark}}{\chaptertitlename\ \thechapter}{14pt}{\Huge}
+\titlespacing*{\chapter}{0pt}{-10pt}{24pt}
+
+% Môi trường ghi chú minh bạch
+\newenvironment{ghichu}{\begin{quote}\itshape\small\color{vnpostdark}}{\end{quote}}
+
+% Hộp thông tin
+\newcommand{\infobox}[1]{%
+  \begin{center}\begin{tikzpicture}
+    \node[draw=vnpostgreen,fill=boxblue,rounded corners,inner sep=8pt,
+          text width=0.9\textwidth]{\small #1};
+  \end{tikzpicture}\end{center}}
+
+% Macro
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\vnpost}{Tổng công ty Bưu điện Việt Nam}
+\newcommand{\rag}{RAG}
+\newcommand{\ft}{fine-tuning}
+
+% listings
+\lstset{basicstyle=\ttfamily\small,backgroundcolor=\color{lightgray},frame=single,
+  rulecolor=\color{vnpostgreen},breaklines=true,columns=fullflexible,
+  showstringspaces=false,keepspaces=true,keywordstyle=\color{vnpostdark}\bfseries}
+
+% Header/footer
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\nouppercase{\leftmark}}
+\fancyhead[R]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancypagestyle{plain}{\fancyhf{}\fancyhead[R]{\small\thepage}\renewcommand{\headrulewidth}{0pt}}
+
+% Khoảng cách dòng
+\linespread{1.25}
