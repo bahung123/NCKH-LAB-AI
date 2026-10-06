@@ -114,39 +114,21 @@ so sánh với đáp án tham chiếu. Kết quả cho giá trị trung bình, t
 nhất đều bằng 10,00. Cần nhấn mạnh rằng cỡ mẫu rất nhỏ, nên kết quả này chỉ có ý nghĩa
 minh họa quy trình đánh giá; để kết luận vững chắc cần mở rộng lên hàng trăm câu.
 
-\subsection{Đánh giá RAGAS trên bộ 99 câu hỏi EMS}
+\subsection{Bộ đánh giá RAGAS trên bộ 99 câu hỏi EMS}
 
-Hệ thống đã thu thập phản hồi cho toàn bộ 99 câu hỏi của bộ đánh giá EMS: 99/99 câu thành
-công, hoàn tất trong 249,4 giây với 10 luồng xử lý song song. Mỗi bản ghi gồm câu hỏi, đáp
-án tham chiếu, câu trả lời của chatbot, ngữ cảnh retrieval và độ dài ký tự.
+Hệ thống đã xây dựng bộ đánh giá RAGAS cho miền EMS dựa trên bộ 99 câu hỏi -- đáp án tham
+chiếu, với hai phiên bản cài đặt: một bản dùng thư viện RAGAS chính thức và một bản tự cài
+đặt (``RAGAS-4'') để kiểm soát chi tiết từng thành phần, sử dụng mô hình đánh giá độc lập.
+Bốn thước đo được tính gồm Faithfulness, Answer Relevancy, Context Precision và Context
+Recall.
 
-Bảng \ref{tab:ragas} trình bày \emph{kết quả minh họa} cho bốn thước đo RAGAS. Các giá trị
-này được thiết kế để phản ánh mức hợp lý điển hình của một hệ \rag{} hoạt động tốt trên miền
-hẹp, nhưng \emph{không phải} là số liệu tổng hợp thật (quy trình thu thập đã hoàn tất, bước
-tổng hợp điểm sẽ được thực hiện trong đợt đánh giá tiếp theo).
+Hệ thống đã thu thập phản hồi cho toàn bộ 99 câu hỏi của bộ đánh giá: 99/99 câu thành công,
+hoàn tất trong 249,4 giây với 10 luồng xử lý song song. Mỗi bản ghi gồm câu hỏi, đáp án
+tham chiếu, câu trả lời của chatbot, ngữ cảnh retrieval và độ dài ký tự.
 
-\begin{table}[htbp]
-\centering
-\caption{Kết quả minh họa các thước đo RAGAS trên bộ 99 câu hỏi EMS.}
-\label{tab:ragas}
-\small
-\begin{tabular}{@{}p{6.2cm}p{2.6cm}p{5.6cm}@{}}
-\toprule
-\textbf{Thước đo} & \textbf{Giá trị} & \textbf{Ý nghĩa} \\
-\midrule
-Faithfulness & 0,86 & Câu trả lời được hỗ trợ bởi ngữ cảnh \\
-Answer Relevancy & 0,89 & Câu trả lời đúng trọng tâm câu hỏi \\
-Context Precision & 0,74 & Tỉ lệ ngữ cảnh hữu ích \\
-Context Recall & 0,81 & Mức bao phủ đáp án tham chiếu \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{ghichu}
-Ghi chú minh bạch: các giá trị trong bảng \ref{tab:ragas} là kết quả minh họa, không phải
-số liệu đo thật. Chúng được đưa vào để minh họa cách trình bày và diễn giải kết quả, không
-dùng để khẳng định chất lượng thực tế của hệ thống.
-\end{ghichu}
+Bước tổng hợp điểm từ các phản hồi đã thu thập chưa hoàn tất tại thời điểm viết báo cáo, do
+đó báo cáo chưa công bố các giá trị RAGAS tổng hợp. Việc hoàn tất và công bố các điểm này là
+một nội dung của đợt đánh giá tiếp theo (xem mục \ref{sec:thaoluan} và chương \ref{ch:ketluan}).
 
 \section{So sánh RAG, fine-tuning và kiến trúc hybrid}
 \label{sec:ss}
@@ -239,7 +221,8 @@ lời ngắn, cấu hình hiện tại đáp ứng được yêu cầu trải ng
 \section{Case study định tính}
 \label{sec:casestudy}
 
-Để minh họa hành vi thực tế, dưới đây là một số tình huống hội thoại tiêu biểu.
+Để minh họa hành vi thực tế, dưới đây là một số tình huống hội thoại ví dụ (không phải bản
+ghi hội thoại thật).
 
 \paragraph{Tình huống 1 -- Hỏi biểu phí.} Người dùng hỏi: ``Cước EMS đi Nhật cho 500g là
 bao nhiêu?''. Agent điều phối định tuyến đến agent \rag{} sản phẩm -- dịch vụ. Hệ thống

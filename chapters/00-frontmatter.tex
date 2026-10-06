@@ -4,8 +4,8 @@
 \begin{titlepage}
 \centering
 \vspace*{0.6cm}
-{\large\bfseries [TÊN TỔNG CÔNG TY/ĐƠN VỊ]}\\[0.2cm]
-{\large [PHÒNG/BAN CHUYÊN MÔN]}\\[0.9cm]
+{\large\bfseries TỔNG CÔNG TY BƯU ĐIỆN VIỆT NAM}\\[0.2cm]
+{\large TRUNG TÂM ĐỔI MỚI SÁNG TẠO -- PHÒNG AI}\\[0.9cm]
 {\large\bfseries BÁO CÁO KỸ THUẬT -- ĐỀ XUẤT TRIỂN KHAI}\\[1.4cm]
 
 {\color{vnpostdark}\rule{\textwidth}{1pt}}\\[0.6cm]
@@ -18,7 +18,7 @@ của Tổng công ty Bưu điện Việt Nam}\\[0.6cm]
 
 \begin{tabular}{rl}
 \textbf{Kính gửi:} & Ban lãnh đạo Tổng công ty Bưu điện Việt Nam \\[0.15cm]
-\textbf{Đơn vị thực hiện:} & [PHÒNG/BAN/NHÓM THỰC HIỆN] \\[0.15cm]
+\textbf{Đơn vị thực hiện:} & Phòng AI, Trung tâm Đổi mới Sáng tạo \\[0.15cm]
 \textbf{Người trình bày:} & [HỌ VÀ TÊN] \\[0.15cm]
 \textbf{Chức danh:} & [CHỨC DANH] \\[0.15cm]
 \textbf{Ngày báo cáo:} & [NGÀY/THÁNG/NĂM] \\[0.15cm]
@@ -48,7 +48,7 @@ chia sẻ bối cảnh nghiệp vụ và dữ liệu để hoàn thành báo cá
 
 \vspace{1cm}
 \begin{flushright}
-\emph{Đơn vị thực hiện}\\[0.5cm]
+\emph{Phòng AI, Trung tâm Đổi mới Sáng tạo}\\[0.5cm]
 [HỌ VÀ TÊN]
 \end{flushright}
 
@@ -72,11 +72,12 @@ kèm reranker; đồng thời đề xuất pipeline fine-tuning theo hướng th
 (LoRA/QLoRA). Toàn bộ mô hình được phục vụ cục bộ (on-premise) bằng vLLM để bảo đảm dữ
 liệu nội bộ không rời khỏi hạ tầng của VNPost.
 
-Kết quả thực nghiệm trên các tập tài liệu nội bộ và bộ đánh giá gồm 99 câu hỏi cho thấy
+Kết quả thực nghiệm trên tập tài liệu nội bộ (bộ mẫu 6 câu hỏi có đáp án tham chiếu) cho thấy
 dense retrieval đạt Recall@20 = 100\%, trong khi cấu hình sản xuất sau rerank đạt
 Recall@5 = 50\% và MRR = 0,3149; phân tích lỗi cho thấy nguyên nhân chính nằm ở khâu
-rerank chứ không phải khâu retrieval. Báo cáo cũng trình bày kết quả đánh giá sinh văn
-bản bằng LLM-as-judge và bộ thước đo RAGAS, kết quả đo throughput suy luận của vLLM,
+rerank chứ không phải khâu retrieval. Với miền EMS, bộ đánh giá gồm 99 câu hỏi đã được thu
+thập phản hồi đầy đủ. Báo cáo cũng trình bày kết quả đánh giá sinh văn
+bản bằng LLM-as-judge, bộ đánh giá RAGAS đã xây dựng cho bộ 99 câu hỏi EMS, kết quả đo throughput của vLLM,
 ước tính hiệu quả kinh tế -- xã hội, và đề xuất kiến trúc hybrid RAG + fine-tuning cùng
 lộ trình phát triển. Kết quả cho thấy RAG là giải pháp phù hợp và khả thi cho tri thức
 động, còn fine-tuning bổ trợ cho phong cách và nghiệp vụ ổn định, và sự kết hợp của hai
