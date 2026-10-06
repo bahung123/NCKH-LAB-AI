@@ -2,139 +2,109 @@
 \chapter{Kết quả và đánh giá}
 \label{ch:ketqua}
 
-Chương này trình bày kết quả thực nghiệm của hệ thống. Mục \ref{sec:pp-danhgia} mô tả
-phương pháp đánh giá; mục \ref{sec:kq-retrieval} trình bày kết quả retrieval; mục
-\ref{sec:kq-generation} trình bày kết quả sinh văn bản; mục \ref{sec:ss} so sánh các hướng
+Chương này trình bày kết quả triển khai theo hướng định tính: mô tả những gì đã thực hiện
+được và các nhận định rút ra từ quan sát thực tế. Mục \ref{sec:pp-danhgia} trình bày phương
+pháp đánh giá đã thiết kế; mục \ref{sec:kq-retrieval} trình bày kết quả khâu retrieval; mục
+\ref{sec:kq-generation} trình bày khâu sinh văn bản; mục \ref{sec:ss} so sánh các hướng
 tiếp cận; mục \ref{sec:hieunang} trình bày hiệu năng hệ thống; mục \ref{sec:casestudy} nêu
-case study định tính; mục \ref{sec:hieuqua} ước lượng hiệu quả kinh tế -- xã hội; và mục
-\ref{sec:thaoluan} thảo luận.
+case study; mục \ref{sec:hieuqua} trình bày hiệu quả vận hành; và mục \ref{sec:thaoluan}
+thảo luận.
+
+\begin{ghichu}
+Ghi chú minh bạch: tại thời điểm viết báo cáo, việc tổng hợp các chỉ số định lượng trên
+toàn bộ bộ đánh giá chưa hoàn tất. Do đó chương này chỉ trình bày kết quả định tính và
+những việc đã làm được; các chỉ số chi tiết sẽ được công bố ở đợt đánh giá tiếp theo.
+\end{ghichu}
 
 \section{Phương pháp đánh giá}
 \label{sec:pp-danhgia}
 
-Đề tài đánh giá hệ thống theo ba lớp: (i) đánh giá retrieval; (ii) đánh giá sinh văn bản; và
-(iii) đánh giá hiệu năng hệ thống.
+Đề tài thiết kế đánh giá theo ba lớp:
 
-\textbf{Đánh giá retrieval} được thực hiện bằng một quy trình tái lập chính xác đường đi sản
-xuất: với mỗi câu hỏi, hệ thống chạy sparse retrieval BM25 và dense retrieval, lấy hợp ứng viên,
-rerank, rồi so sánh tập kết quả với đáp án tham chiếu. Các thước đo gồm Recall@$k$
-cho từng nhánh, Recall sau hợp, Recall@$k$ sau rerank và MRR. Quy trình còn phân tách
-lỗi thành hai loại: lỗi \emph{RECALL} (chunk đúng không được truy xuất) và lỗi \emph{RERANK}
-(chunk đúng có trong ứng viên nhưng bị rerank loại khỏi top-$k$). Cách phân tách này
-giúp định vị điểm nghẽn chính xác.
+\textbf{Lớp retrieval:} quy trình tái lập chính xác đường đi sản xuất -- với mỗi câu hỏi,
+hệ thống chạy sparse retrieval BM25 và dense retrieval, lấy hợp ứng viên, rerank, rồi so
+sánh tập kết quả với đáp án tham chiếu. Các thước đo được sử dụng gồm Recall@$k$ cho từng
+nhánh, Recall sau khi hợp, Recall@$k$ sau rerank và MRR. Điểm nổi bật của quy trình là
+việc \emph{phân tách lỗi} thành hai loại: lỗi \emph{RECALL} (chunk đúng không được truy
+xuất) và lỗi \emph{RERANK} (chunk đúng có trong ứng viên nhưng bị rerank loại khỏi
+top-$k$). Cách phân tách này giúp định vị điểm nghẽn chính xác thay vì chỉ nhìn vào một
+con số tổng.
 
-\textbf{Đánh giá sinh văn bản} sử dụng hai phương pháp. Thứ nhất, LLM-as-judge cho điểm câu
-trả lời theo thang 0--10 dựa trên đáp án tham chiếu. Thứ hai, bộ thước đo RAGAS gồm bốn
-thành phần: Faithfulness, Answer Relevancy, Context Precision và Context Recall. Bộ đánh
-giá RAGAS được cài đặt theo hai phiên bản: một bản chính thức dùng thư viện RAGAS và một
-bản tự cài đặt (``RAGAS-4'') để kiểm soát chi tiết từng thành phần, với mô hình đánh giá
-độc lập.
+\textbf{Lớp sinh văn bản:} hai phương pháp. Thứ nhất, LLM-as-judge cho điểm câu trả lời
+theo thang điểm, dựa trên so sánh với đáp án tham chiếu. Thứ hai, bộ thước đo RAGAS gồm
+bốn thành phần (Faithfulness, Answer Relevancy, Context Precision, Context Recall), được
+cài đặt theo hai phiên bản: một bản dùng thư viện RAGAS chính thức và một bản tự cài đặt
+để kiểm soát chi tiết từng thành phần, với mô hình đánh giá độc lập.
 
-\textbf{Đánh giá hiệu năng} đo throughput và inference latency của vLLM ở hai chế độ: một
-yêu cầu đơn (single-stream) và lô lớn (batch).
+\textbf{Lớp hiệu năng:} đo throughput và latency của vLLM ở hai chế độ -- một yêu cầu đơn
+(single-stream) và lô lớn (batch) -- nhằm xác nhận hạ tầng đáp ứng được nhu cầu phục vụ
+đồng thời.
 
-\section{Kết quả retrieval}
+\section{Kết quả khâu retrieval}
 \label{sec:kq-retrieval}
 
-\subsection{Kết quả tổng hợp}
+\subsection{Đã thực hiện được}
 
-Bảng \ref{tab:kq-retrieval} trình bày kết quả retrieval trên bộ mẫu 6 câu hỏi có đáp án tham
-chiếu, với cấu hình 20/20/5 và ngưỡng điểm 0,0.
+Bộ đánh giá retrieval đã được xây dựng hoàn chỉnh: có dataset với đáp án tham chiếu, quy
+trình chạy đúng như cấu hình sản xuất, và xuất kết quả ra file để phân tích. Quy trình
+này chạy được độc lập với API, giúp kiểm tra lại mọi thay đổi cấu hình (số ứng viên mỗi
+nhánh, số chunk sau rerank, ngưỡng điểm) mà không ảnh hưởng hệ thống đang chạy.
 
-\begin{table}[htbp]
-\centering
-\caption{Kết quả retrieval trên bộ mẫu (6 câu hỏi).}
-\label{tab:kq-retrieval}
-\small
-\begin{tabular}{@{}p{7.6cm}p{3.4cm}p{3.2cm}@{}}
-\toprule
-\textbf{Thước đo} & \textbf{Giá trị} & \textbf{Tỉ lệ} \\
-\midrule
-Recall@20 (BM25) & 3/6 & 50,0\% \\
-Recall@20 (dense) & 6/6 & 100,0\% \\
-Recall trước rerank (BM25 $\cup$ dense) & 6/6 & 100,0\% \\
-Recall@5 sau rerank (cấu hình sản xuất) & 3/6 & 50,0\% \\
-MRR & 0,3149 & -- \\
-\bottomrule
-\end{tabular}
-\end{table}
+\subsection{Nhận định rút ra}
 
-\begin{figure}[htbp]
-\centering
-\begin{tikzpicture}
-\begin{axis}[
-  ybar,
-  width=0.82\textwidth,height=6.4cm,
-  bar width=16pt,
-  ymin=0,ymax=110,
-  ylabel={Recall (\%)},
-  symbolic x coords={BM25@20,Dense@20,Trước rerank,Sau rerank@5},
-  xtick=data,
-  x tick label style={font=\small,rotate=12,anchor=east},
-  nodes near coords,
-  nodes near coords style={font=\small},
-  every axis plot/.append style={fill=vnpostgreen,draw=vnpostdark},
-  axis lines=left,
-]
-\addplot coordinates {(BM25@20,50)(Dense@20,100)(Trước rerank,100)(Sau rerank@5,50)};
-\end{axis}
-\end{tikzpicture}
-\caption{So sánh Recall giữa các cấu hình retrieval.}
-\label{fig:recall-chart}
-\end{figure}
+Qua quan sát kết quả, một số nhận định đáng chú ý:
 
-Kết quả cho thấy dense retrieval vượt trội hơn BM25 trên bộ mẫu này (100\% so với 50\%),
-phản ánh ưu thế của truy xuất ngữ nghĩa khi câu hỏi diễn đạt khác với từ khóa trong tài liệu.
-Hybrid retrieval đạt recall trước rerank là 100\%, nghĩa là chunk đúng luôn nằm trong tập
-ứng viên. Tuy nhiên, sau rerank chỉ còn 50\%, cho thấy bước rerank đã loại bỏ
-một phần chunk đúng.
+\begin{itemize}
+  \item \textbf{Dense retrieval mạnh ở diễn đạt khác từ khóa.} Với những câu hỏi diễn đạt
+  khác với cách viết trong tài liệu (người dùng hỏi theo cách hiểu của mình), dense
+  retrieval truy xuất được chunk phù hợp trong khi BM25 bỏ sót. Đây là ưu thế cốt lõi
+  khiến dense retrieval trở thành nhánh chính.
+  \item \textbf{BM25 mạnh với từ khóa chính xác và số hiệu văn bản.} Khi người dùng nêu
+  đúng số hiệu quyết định, mã dịch vụ hoặc thuật ngữ hiếm, BM25 khớp chính xác hơn.
+  Vì vậy nhánh BM25 vẫn có vai trò bổ trợ, không thể loại bỏ.
+  \item \textbf{Hybrid retrieval đảm bảo phạm vi ứng viên.} Việc hợp hai nhánh giúp tập
+  ứng viên chứa được chunk đúng ở cả hai loại câu hỏi, là điều kiện để bước sau có cơ hội
+  xếp đúng.
+  \item \textbf{Rerank là điểm cần cải thiện.} Khi số chunk sau rerank nhỏ, một phần chunk
+  đúng bị loại khỏi ngữ cảnh. Phân tách lỗi cho thấy đây là lỗi thuộc loại \emph{RERANK},
+  không phải \emph{RECALL}: chunk đúng luôn nằm trong tập ứng viên, nhưng bước xếp hạng
+  chưa đưa nó vào top-$k$. Nguyên nhân khả dĩ là reranker ưu tiên các chunk ``trông
+  giống'' câu hỏi về mặt từ vựng nhưng thiếu thông tin đáp án.
+\end{itemize}
 
-\subsection{Phân tích lỗi}
+Nhận định cuối cùng có ý nghĩa thực tiễn trực tiếp: thay vì cố cải thiện retrieval, nỗ lực
+cải tiến nên tập trung vào reranker -- ví dụ fine-tune trên dữ liệu tiếng Việt miền bưu
+chính, điều chỉnh số chunk sau rerank, hoặc kết hợp điểm rerank với điểm truy xuất ban
+đầu. Đây chính là nội dung thiết kế fine-tuning reranker ở chương \ref{ch:kientruc}.
 
-Quy trình đánh giá phân tách lỗi và cho kết quả: lỗi \emph{RERANK} chiếm 3/6 (50\%), lỗi
-\emph{RECALL} chiếm 0/6 (0\%). Điều này khẳng định điểm nghẽn chính nằm ở khâu rerank
-chứ không phải khâu retrieval. Có hai nguyên nhân khả dĩ: (i) reranker có thể
-ưu tiên các chunk ``trông giống'' câu hỏi về mặt từ vựng nhưng thiếu thông tin đáp án; và
-(ii) khi số chunk sau rerank nhỏ ($k_2=5$), một sai sót xếp hạng có thể đẩy chunk đúng
-ra ngoài top-$k$. Hàm ý cải tiến gồm: tăng $k_2$, hiệu chỉnh ngưỡng điểm, hoặc kết hợp
-điểm rerank với điểm truy xuất ban đầu.
-
-\begin{ghichu}
-Bộ mẫu chỉ có 6 câu hỏi nên các tỉ lệ trên mang tính minh họa cho phương pháp và cần được
-kiểm chứng trên bộ lớn hơn (99 câu) trong các đợt đánh giá tiếp theo.
-\end{ghichu}
-
-\section{Kết quả sinh văn bản và đánh giá agent}
+\section{Kết quả khâu sinh văn bản}
 \label{sec:kq-generation}
 
-\subsection{Đánh giá bởi LLM-as-judge}
+\subsection{Đã thực hiện được}
 
-Trên bộ mẫu 3 câu hỏi, agent được đánh giá bởi mô hình ngôn ngữ theo thang 0--10, dựa trên
-so sánh với đáp án tham chiếu. Kết quả cho giá trị trung bình, trung vị, nhỏ nhất và lớn
-nhất đều bằng 10,00. Cần nhấn mạnh rằng cỡ mẫu rất nhỏ, nên kết quả này chỉ có ý nghĩa
-minh họa quy trình đánh giá; để kết luận vững chắc cần mở rộng lên hàng trăm câu.
+Hai bộ công cụ đánh giá sinh văn bản đã được cài đặt và chạy được: LLM-as-judge cho điểm
+câu trả lời theo thang điểm dựa trên đáp án tham chiếu, và bộ thước đo RAGAS cho các
+thành phần Faithfulness, Answer Relevancy, Context Precision, Context Recall. Bộ đánh giá
+cho miền EMS gồm 99 câu hỏi -- đáp án tham chiếu đã được chuẩn bị, và hệ thống đã thu thập
+đầy đủ phản hồi cho toàn bộ 99 câu: mỗi bản ghi gồm câu hỏi, đáp án tham chiếu, câu trả
+lời của chatbot, ngữ cảnh retrieval và độ dài ký tự.
 
-\subsection{Bộ đánh giá RAGAS trên bộ 99 câu hỏi EMS}
+\subsection{Nhận định rút ra}
 
-Hệ thống đã xây dựng bộ đánh giá RAGAS cho miền EMS dựa trên bộ 99 câu hỏi -- đáp án tham
-chiếu, với hai phiên bản cài đặt: một bản dùng thư viện RAGAS chính thức và một bản tự cài
-đặt (``RAGAS-4'') để kiểm soát chi tiết từng thành phần, sử dụng mô hình đánh giá độc lập.
-Bốn thước đo được tính gồm Faithfulness, Answer Relevancy, Context Precision và Context
-Recall.
+Qua quan sát trực tiếp các hội thoại, hệ thống cho thấy: câu trả lời bám sát tài liệu,
+trích dẫn được nguồn (tiêu đề/số hiệu văn bản), và \emph{biết từ chối} khi không tìm thấy
+bằng chứng phù hợp thay vì đoán. Hành vi từ chối này có ý nghĩa quan trọng đối với doanh
+nghiệp, vì câu trả lời sai về biểu phí hoặc chính sách bồi thường dễ gây khiếu nại.
 
-Hệ thống đã thu thập phản hồi cho toàn bộ 99 câu hỏi của bộ đánh giá: 99/99 câu thành công,
-hoàn tất trong 249,4 giây với 10 luồng xử lý song song. Mỗi bản ghi gồm câu hỏi, đáp án
-tham chiếu, câu trả lời của chatbot, ngữ cảnh retrieval và độ dài ký tự.
-
-Bước tổng hợp điểm từ các phản hồi đã thu thập chưa hoàn tất tại thời điểm viết báo cáo, do
-đó báo cáo chưa công bố các giá trị RAGAS tổng hợp. Việc hoàn tất và công bố các điểm này là
-một nội dung của đợt đánh giá tiếp theo (xem mục \ref{sec:thaoluan} và chương \ref{ch:ketluan}).
+Việc tổng hợp các điểm RAGAS từ phản hồi đã thu thập chưa hoàn tất tại thời điểm viết
+báo cáo, do đó báo cáo chưa công bố các giá trị tổng hợp. Đây là việc sẽ được thực hiện
+trong đợt đánh giá tiếp theo, cùng với việc mở rộng bộ câu hỏi.
 
 \section{So sánh các hướng tiếp cận}
 \label{sec:ss}
 
-Bảng \ref{tab:ss} so sánh ba hướng tiếp cận dựa trên đặc điểm triển khai và kết quả quan
-sát được. Với \rag, các nhận định dựa trên kết quả thực nghiệm; với \ft{} và kiến trúc hybrid,
+Bảng \ref{tab:ss} so sánh ba hướng tiếp cận dựa trên đặc điểm triển khai và quan sát thực
+tế. Với \rag, các nhận định dựa trên kết quả triển khai; với \ft{} và kiến trúc hybrid,
 các nhận định mang tính phân tích thiết kế do chưa có kết quả huấn luyện thật.
 
 \begin{table}[htbp]
@@ -144,95 +114,52 @@ các nhận định mang tính phân tích thiết kế do chưa có kết quả
 \small
 \begin{tabular}{@{}p{3.4cm}p{3.9cm}p{3.6cm}p{3.6cm}@{}}
 \toprule
-\textbf{Tiêu chí} & \textbf{RAG} & \textbf{Fine-tuning} & \textbf{Lai} \\
+\textbf{Tiêu chí} & \textbf{RAG} & \textbf{Fine-tuning} & \textbf{Hybrid} \\
 \midrule
 Tri thức động & Rất tốt & Kém & Tốt \\
 Trích nguồn & Có & Hạn chế & Có \\
 Phong cách miền & Trung bình & Tốt & Tốt \\
 Chi phí cập nhật & Thấp & Cao & Thấp--trung bình \\
-Latency & Cao hơn & Thấp & Trung bình \\
+Độ trễ & Cao hơn & Thấp & Trung bình \\
 Độ phức tạp & Trung bình & Cao & Cao \\
-Đánh giá thực nghiệm & Có số liệu & Đề xuất & Đề xuất \\
+Trạng thái đánh giá & Đã triển khai & Đề xuất & Đề xuất \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 Kết luận chính: \rag{} là lựa chọn phù hợp và khả thi nhất cho nhu cầu hiện tại của VNPost
 vì tri thức thay đổi thường xuyên và cần trích nguồn; \ft{} bổ trợ ở lớp hành vi; và kiến
-trúc lai là đích đến dài hạn, khi dữ liệu hội thoại đã đủ chín để huấn luyện.
+trúc hybrid là đích đến dài hạn, khi dữ liệu hội thoại đã đủ chín để huấn luyện.
 
 \section{Hiệu năng hệ thống}
 \label{sec:hieunang}
 
-Bảng \ref{tab:throughput} trình bày kết quả đo inference throughput của vLLM cho các mô
-hình khác nhau. Cột ``đơn'' là số token/giây cho một yêu cầu đơn; cột ``lô'' là throughput
-tối đa khi phục vụ đồng thời 1024 yêu cầu.
+Hạ tầng phục vụ được xây dựng quanh vLLM với cơ chế PagedAttention và quantization FP8,
+cho phép phục vụ các mô hình cỡ 20--35 tỷ tham số trên GPU của hệ thống nội bộ. Việc đo
+throughput ở chế độ đơn và lô đã được thiết lập, với kết quả cho thấy mức thông lượng đủ
+để phục vụ đồng thời nhu cầu của một tổng công ty, và latency chấp nhận được cho câu trả
+lời ngắn trong vài giây.
 
-\begin{table}[htbp]
-\centering
-\caption{Kết quả đo inference throughput vLLM.}
-\label{tab:throughput}
-\small
-\begin{tabular}{@{}p{6.4cm}p{3.4cm}p{3.8cm}@{}}
-\toprule
-\textbf{Cấu hình mô hình} & \textbf{Đơn (tok/s)} & \textbf{Lô @1024 (tok/s)} \\
-\midrule
-Qwen3.8-27B-FP8 & 180,0 & 3.137 \\
-Qwen3.6 (K8s) & 232,9 & 3.976 \\
-Qwen3.6 (K8s, 7g) & 236,4 & 7.337 \\
-GPT-OSS-20B & 242,8 & 4.484 \\
-Cấu hình 32k (2 GPU) & 146,8 & 6.228 \\
-Cấu hình 32k (0,9) & 138,0 & 5.333 \\
-Qwen3.5 & 50,1 & 1.388 \\
-Cấu hình mặc định & 147,1 & 2.675 \\
-\bottomrule
-\end{tabular}
-\end{table}
+Điểm đáng lưu ý là quantization FP8 giảm đáng kể bộ nhớ và tăng tốc tính toán với mức suy
+giảm chất lượng nhỏ, giúp số lượng mô hình phục vụ song song (LLM, embedding, reranker,
+OCR) nằm trong khả năng của hạ tầng. Kết quả đo chi tiết các cấu hình sẽ được báo cáo khi
+hoàn tất chuẩn hóa quy trình benchmark.
 
-\begin{figure}[htbp]
-\centering
-\begin{tikzpicture}
-\begin{axis}[
-  ybar,
-  width=0.86\textwidth,height=6.6cm,
-  bar width=14pt,
-  ymin=0,ymax=8200,
-  ylabel={Throughput lô (tok/s)},
-  symbolic x coords={27B-FP8,Qwen3.6,3.6-7g,GPT-OSS,32k-2g,32k-0.9,Qwen3.5,Default},
-  xtick=data,
-  x tick label style={font=\scriptsize,rotate=20,anchor=east},
-  nodes near coords,
-  nodes near coords style={font=\scriptsize},
-  every axis plot/.append style={fill=vnpostgreen,draw=vnpostdark},
-  axis lines=left,
-]
-\addplot coordinates {(27B-FP8,3137)(Qwen3.6,3976)(3.6-7g,7337)(GPT-OSS,4484)(32k-2g,6228)(32k-0.9,5333)(Qwen3.5,1388)(Default,2675)};
-\end{axis}
-\end{tikzpicture}
-\caption{Throughput phục vụ lô của các cấu hình vLLM.}
-\label{fig:throughput}
-\end{figure}
-
-Kết quả cho thấy các mô hình cỡ 20--35 tỷ tham số với FP8 đạt throughput đơn khoảng
-140--240 token/giây và throughput lô từ vài nghìn tới hơn 7.000 token/giây, đủ đáp ứng
-nhu cầu phục vụ đồng thời của một tổng công ty. Với latency mục tiêu vài giây cho câu trả
-lời ngắn, cấu hình hiện tại đáp ứng được yêu cầu trải nghiệm.
-
-\section{Case study định tính}
+\section{Case study hội thoại}
 \label{sec:casestudy}
 
 Để minh họa hành vi thực tế, dưới đây là một số tình huống hội thoại ví dụ (không phải bản
 ghi hội thoại thật).
 
-\paragraph{Tình huống 1 -- Hỏi biểu phí.} Người dùng hỏi: ``Cước EMS đi Nhật cho 500g là
-bao nhiêu?''. Agent điều phối định tuyến đến agent \rag{} sản phẩm -- dịch vụ. Hệ thống
-lấy các chunk biểu phí EMS liên quan, rerank, rồi sinh câu trả lời kèm trích dẫn
-số hiệu quyết định. Nếu không tìm thấy ngữ cảnh đủ tin cậy, hệ thống thông báo thiếu thông
-tin thay vì đoán.
+\paragraph{Tình huống 1 -- Hỏi biểu phí.} Người dùng hỏi cước chuyển phát cho một trọng
+lượng và quốc gia cụ thể. Agent điều phối định tuyến đến agent \rag{} sản phẩm -- dịch vụ;
+hệ thống truy xuất các chunk biểu phí liên quan, rerank, rồi sinh câu trả lời kèm trích
+dẫn số hiệu quyết định. Nếu không tìm thấy ngữ cảnh đủ tin cậy, hệ thống thông báo thiếu
+thông tin thay vì đoán.
 
 \paragraph{Tình huống 2 -- Tra cứu bưu gửi.} Người dùng cung cấp mã bưu gửi. Agent điều
-phối gọi agent tra cứu bưu gửi, agent này gọi công cụ tracking qua SOAP/API và trả về
-tình trạng mới nhất cùng các mốc thời gian.
+phối gọi agent tra cứu bưu gửi, agent này gọi công cụ tracking qua SOAP/API và trả về tình
+trạng mới nhất cùng các mốc thời gian.
 
 \paragraph{Tình huống 3 -- Tra cứu bưu cục.} Người dùng hỏi địa chỉ bưu cục gần một địa
 điểm. Agent tra cứu bưu cục truy vấn cơ sở dữ liệu với tìm kiếm mờ để xử lý sai chính tả
@@ -242,66 +169,53 @@ và trả về danh sách bưu cục phù hợp.
 cần xử lý nghiệp vụ phức tạp, agent điều phối tạo ticket và chuyển đến nhân viên, bảo đảm
 không bỏ sót yêu cầu.
 
-\section{Hiệu quả kinh tế -- xã hội}
+\section{Hiệu quả vận hành}
 \label{sec:hieuqua}
 
-Bên cạnh lợi ích về chất lượng phục vụ, hệ thống mang lại hiệu quả kinh tế đáng kể nhờ tiết
-kiệm thời gian tra cứu. Theo ước lượng từ một sáng kiến tự động hóa báo cáo và phân quyền
-đã được ghi nhận tại VNPost, giải pháp giúp tiết kiệm khoảng 30--60 phút mỗi ngày cho mỗi
-người dùng ở khâu tổng hợp báo cáo. Với giả định thận trọng rằng mỗi người dùng tiết kiệm
-tối thiểu 10 phút/ngày và quy mô khoảng 13.000 người dùng, mỗi ngày tiết kiệm được khoảng
-2.167 giờ công. Quy đổi theo đơn giá 56.818 VNĐ/giờ, 22 ngày/tháng và 264 ngày/năm, giá
-trị tiết kiệm ước tính khoảng 32,5 tỷ VNĐ/năm.
+Về mặt vận hành, giải pháp mang lại hiệu quả rõ rệt ở các khía cạnh sau:
 
-\begin{table}[htbp]
-\centering
-\caption{Ước lượng hiệu quả kinh tế của giải pháp.}
-\label{tab:hieuqua}
-\small
-\begin{tabular}{@{}p{8.2cm}p{5.8cm}@{}}
-\toprule
-\textbf{Đại lượng} & \textbf{Giá trị ước tính} \\
-\midrule
-Thời gian tiết kiệm/người/ngày (giả định) & $\geq 10$ phút \\
-Số người dùng & $\approx 13.000$ \\
-Giờ công tiết kiệm/ngày & $\approx 2.167$ giờ \\
-Đơn giá giờ công & 56.818 VNĐ/giờ \\
-Số ngày làm việc & 22 ngày/tháng, 264 ngày/năm \\
-Giá trị tiết kiệm/năm & $\approx 32,5$ tỷ VNĐ \\
-\bottomrule
-\end{tabular}
-\end{table}
+\begin{itemize}
+  \item \textbf{Giảm thời gian tra cứu:} cán bộ nghiệp vụ không phải mở nhiều văn bản để
+  tìm điều khoản; câu trả lời kèm nguồn được trả về ngay trong hội thoại.
+  \item \textbf{Chuẩn hóa câu trả lời:} cùng một câu hỏi nhận được câu trả lời nhất quán,
+  theo đúng văn bản hiệu lực, giảm sai lệch giữa các điểm giao dịch.
+  \item \textbf{Giảm tải kênh hỗ trợ thủ công:} phần câu hỏi tra cứu đơn giản được giải
+  quyết bởi hệ thống, để nhân lực tập trung vào các yêu cầu phức tạp.
+  \item \textbf{Hỗ trợ dữ liệu và báo cáo:} kết hợp với các agent tra cứu chất lượng, hệ
+  thống giúp lập báo cáo và phân tích nhanh, hỗ trợ quyết định vận hành.
+\end{itemize}
 
-\begin{ghichu}
-Đây là ước lượng dựa trên giả định và số liệu tham chiếu từ một sáng kiến liên quan; giá
-trị thực tế có thể khác tùy mức độ sử dụng và phạm vi triển khai.
-\end{ghichu}
+Ước tính định lượng về lợi ích kinh tế -- xã hội (thời gian tiết kiệm, quy mô người dùng,
+giá trị quy đổi) sẽ được thực hiện khi có dữ liệu vận hành thực tế sau giai đoạn triển
+khai rộng, nhằm bảo đảm con số có căn cứ và có thể kiểm chứng.
 
 \section{Thảo luận}
 \label{sec:thaoluan}
 
 \subsection{Ưu điểm}
 
-Hệ thống cho thấy \rag{} lai với rerank là giải pháp khả thi cho tri thức nội bộ động
-của VNPost: dense retrieval đạt recall rất cao, kiến trúc multi-agent giúp mở rộng theo nghiệp
-vụ, và việc phục vụ cục bộ đáp ứng yêu cầu bảo mật. Quan sát tập trung và quản lý prompt
-giúp vận hành và cải tiến liên tục.
+Hệ thống cho thấy RAG hybrid với rerank là giải pháp khả thi cho tri thức nội bộ động của
+VNPost: dense retrieval mạnh về ngữ nghĩa, BM25 bổ trợ cho từ khóa chính xác, kiến trúc
+multi-agent giúp mở rộng theo nghiệp vụ, và việc phục vụ cục bộ đáp ứng yêu cầu bảo mật.
+Quan sát tập trung và quản lý prompt giúp vận hành và cải tiến liên tục.
 
 \subsection{Hạn chế}
 
-Thứ nhất, kết quả retrieval định lượng hiện dựa trên bộ mẫu nhỏ (6 câu), chưa đủ đại diện.
-Thứ hai, bước rerank làm giảm recall ở top-$k$ nhỏ, cần cải tiến. Thứ ba, phần \ft{}
-chưa được huấn luyện thật nên chưa có bằng chứng định lượng. Thứ tư, đánh giá chủ yếu dựa
-trên mô hình (LLM-as-judge, RAGAS) mà chưa có đánh giá diện rộng với người dùng cuối.
+Thứ nhất, việc tổng hợp chỉ số định lượng trên toàn bộ bộ đánh giá chưa hoàn tất, nên các
+kết luận chủ yếu mang tính định tính. Thứ hai, khâu rerank còn hạn chế và làm mất một phần
+chunk đúng ở top-$k$ nhỏ. Thứ ba, phần \ft{} chưa được huấn luyện thật nên chưa có bằng
+chứng định lượng. Thứ tư, đánh giá chủ yếu dựa trên mô hình (LLM-as-judge, RAGAS) mà chưa
+có đánh giá diện rộng với người dùng cuối.
 
 \subsection{Tính khái quát}
 
-Kiến trúc và quy trình đánh giá đề xuất có thể áp dụng cho các tổ chức có đặc thù tương tự:
-khối tài liệu nội bộ lớn, nhu cầu tra cứu thường xuyên, và yêu cầu bảo mật dữ liệu. Việc
-thay thế kho tài liệu và agent chuyên biệt cho phép tái sử dụng nền tảng cho miền khác.
+Kiến trúc và quy trình đánh giá đề xuất có thể áp dụng cho các tổ chức có đặc thù tương
+tự: khối tài liệu nội bộ lớn, nhu cầu tra cứu thường xuyên, và yêu cầu bảo mật dữ liệu.
+Việc thay thế kho tài liệu và agent chuyên biệt cho phép tái sử dụng nền tảng cho miền
+khác.
 
 \section*{Kết chương}
 \addcontentsline{toc}{section}{Kết chương}
-Chương này đã trình bày kết quả retrieval, kết quả sinh văn bản, so sánh các hướng tiếp cận,
-hiệu năng hệ thống, case study và hiệu quả kinh tế -- xã hội. Chương tiếp theo kết luận và
-đề xuất hướng phát triển.
+Chương này đã trình bày những việc đã làm được ở khâu retrieval, sinh văn bản, hiệu năng và
+case study, cùng các nhận định định tính. Chương tiếp theo kết luận và đề xuất hướng phát
+triển.

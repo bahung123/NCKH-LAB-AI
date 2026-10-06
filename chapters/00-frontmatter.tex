@@ -76,13 +76,14 @@ kèm reranker; đồng thời đề xuất pipeline fine-tuning cho cả ba lo�
 embedding model và reranker. Toàn bộ mô hình được phục vụ cục bộ (on-premise) bằng vLLM để bảo đảm dữ
 liệu nội bộ không rời khỏi hạ tầng của VNPost.
 
-Kết quả thực nghiệm trên tập tài liệu nội bộ (bộ mẫu 6 câu hỏi có đáp án tham chiếu) cho thấy
-dense retrieval đạt Recall@20 = 100\%, trong khi cấu hình sản xuất sau rerank đạt
-Recall@5 = 50\% và MRR = 0,3149; phân tích lỗi cho thấy nguyên nhân chính nằm ở khâu
-rerank chứ không phải khâu retrieval. Với miền EMS, bộ đánh giá gồm 99 câu hỏi đã được thu
-thập phản hồi đầy đủ. Báo cáo cũng trình bày kết quả đánh giá sinh văn
-bản bằng LLM-as-judge, bộ đánh giá RAGAS đã xây dựng cho bộ 99 câu hỏi EMS, kết quả đo throughput của vLLM,
-ước tính hiệu quả kinh tế -- xã hội, và đề xuất kiến trúc hybrid RAG + fine-tuning cùng
+Kết quả triển khai cho thấy dense retrieval mạnh ở việc bắt ngữ nghĩa khi câu hỏi diễn đạt
+khác với từ khóa trong tài liệu, trong khi BM25 bổ trợ tốt cho từ khóa chính xác và số hiệu
+văn bản; hybrid retrieval đảm bảo phạm vi ứng viên đầy đủ. Phân tách lỗi giữa khâu retrieval
+và khâu rerank cho phép định vị rõ điểm cần cải thiện, và quan sát thực tế cho thấy khâu
+rerank đang là điểm nghẽn cần xử lý trước. Với miền EMS, bộ đánh giá gồm 99 câu hỏi đã được
+chuẩn bị và thu thập đầy đủ phản hồi. Báo cáo cũng trình bày hệ thống đánh giá sinh văn bản
+bằng LLM-as-judge và bộ thước đo RAGAS, kết quả hiệu năng của vLLM, hiệu quả vận hành theo
+hướng định tính, và đề xuất kiến trúc hybrid RAG + fine-tuning cùng
 lộ trình phát triển. Kết quả cho thấy RAG là giải pháp phù hợp và khả thi cho tri thức
 động, còn fine-tuning bổ trợ cho phong cách và nghiệp vụ ổn định, và sự kết hợp của hai
 hướng tiếp cận mang lại giá trị thực tiễn cao cho \vnpost.

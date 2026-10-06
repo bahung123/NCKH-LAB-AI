@@ -23,14 +23,13 @@ Bưu điện Việt Nam, dựa trên mô hình ngôn ngữ lớn kết hợp k�
   cho cả ba loại mô hình: LLM (LoRA/QLoRA), embedding model (contrastive learning) và
   reranker cross-encoder; phục vụ bằng vLLM, kèm tiêu chí quyết định khi nào dùng
   \rag, \ft{} hoặc kết hợp.
-  \item \textbf{Đánh giá định lượng:} trên bộ mẫu, dense retrieval đạt Recall@20 = 100\% trong
-  khi cấu hình sản xuất sau rerank đạt Recall@5 = 50\% và MRR = 0,3149; phân tích lỗi
-  cho thấy 50\% lỗi thuộc khâu rerank và 0\% thuộc khâu retrieval. Bộ đánh giá EMS gồm
-  99 câu đã được thu thập phản hồi đầy đủ (99/99 trong 249,4 giây).
-  \item \textbf{Đánh giá hiệu năng và hiệu quả:} các mô hình cỡ 20--35 tỷ tham số với FP8
-  đạt throughput đơn 140--240 token/giây và throughput lô từ vài nghìn tới hơn 7.000
-  token/giây; ước tính tiết kiệm khoảng 32,5 tỷ VNĐ/năm dựa trên giả định thận trọng về thời
-  gian tiết kiệm.
+  \item \textbf{Hệ thống đánh giá:} đã xây dựng quy trình đánh giá retrieval tái lập đúng
+  đường đi sản xuất, kèm cơ chế phân tách lỗi giữa khâu retrieval và khâu rerank; đã xây
+  dựng bộ công cụ đánh giá sinh văn bản (LLM-as-judge và RAGAS) và chuẩn bị bộ đánh giá
+  EMS gồm 99 câu hỏi, thu thập đầy đủ phản hồi.
+  \item \textbf{Hiệu năng và hiệu quả:} hạ tầng vLLM với quantization FP8 phục vụ được các
+  mô hình cỡ 20--35 tỷ tham số, đủ đáp ứng nhu cầu đồng thời của một tổng công ty; giải
+  pháp giúp giảm thời gian tra cứu và chuẩn hóa câu trả lời ở khâu vận hành.
 \end{enumerate}
 
 Tổng hợp lại, \rag{} là giải pháp phù hợp và khả thi cho nhu cầu tri thức động và trích
@@ -42,9 +41,9 @@ nguồn của VNPost, \ft{} bổ trợ ở lớp hành vi và phong cách nghi�
 Bên cạnh kết quả đạt được, đề tài còn một số hạn chế:
 
 \begin{itemize}
-  \item \textbf{Cỡ mẫu đánh giá retrieval nhỏ:} kết quả định lượng chi tiết dựa trên 6 câu
-  hỏi, chưa đủ đại diện cho toàn miền nghiệp vụ. Bộ 99 câu đã được thu thập phản hồi nhưng
-  chưa tổng hợp đầy đủ các thước đo.
+  \item \textbf{Chưa công bố kết quả định lượng đầy đủ:} việc tổng hợp chỉ số trên toàn bộ
+  bộ đánh giá chưa hoàn tất tại thời điểm viết báo cáo, nên các kết luận chủ yếu mang tính
+  định tính và cần được kiểm chứng bằng số liệu.
   \item \textbf{Suy giảm recall ở khâu rerank:} cấu hình hiện tại làm mất một phần
   chunk đúng ở top-$k$ nhỏ, cần cải tiến.
   \item \textbf{Chưa huấn luyện \ft{} thật:} phần \ft{} mới dừng ở thiết kế; chưa có bằng

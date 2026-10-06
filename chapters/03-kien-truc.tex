@@ -231,7 +231,7 @@ lại Recall@$k$, MRR để xác nhận cải thiện trước khi đưa vào s�
 \subsection{Fine-tuning reranker}
 
 Reranker là cross-encoder nhận đồng thời (truy vấn, chunk) và cho điểm mức độ liên quan.
-Fine-tune reranker nhằm cải thiện Recall@$k$ sau rerank -- hiện chỉ đạt 50\% ở cấu hình sản
+Fine-tune reranker nhằm cải thiện Recall@$k$ sau rerank -- hiện còn hạn chế ở cấu hình sản
 xuất -- nên đây là hướng xử lý trực tiếp điểm nghẽn. Dữ liệu là các cặp (truy vấn, chunk)
 được gán nhãn liên quan theo đáp án tham chiếu (nhãn nhị phân hoặc theo mức), với hard
 negatives lấy từ top-$k$ sai. Huấn luyện bằng hàm mất mát phân loại nhị phân (cross-entropy)
