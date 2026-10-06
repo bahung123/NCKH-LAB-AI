@@ -6,8 +6,9 @@ Chương này trình bày việc triển khai hệ thống theo kiến trúc đ�
 \ref{ch:kientruc}. Mục \ref{sec:moitruong} mô tả môi trường và công cụ; mục
 \ref{sec:dulieu} mô tả dữ liệu; mục \ref{sec:cai-dat-rag} trình bày cấu hình \rag; mục
 \ref{sec:cai-dat-ft} trình bày thiết kế \ft; mục \ref{sec:cai-dat-agent} mô tả triển khai
-multi-agent; mục \ref{sec:observability} trình bày hệ thống quan sát và quản lý prompt; và
-mục \ref{sec:khokhan} tổng kết khó khăn cùng giải pháp.
+multi-agent; mục \ref{sec:observability} trình bày triển khai hệ thống quan sát qua OTel
+Gateway; mục \ref{sec:k8s-deploy} trình bày triển khai hệ thống lên Kubernetes; và mục
+\ref{sec:khokhan} tổng kết khó khăn cùng giải pháp.
 
 \section{Môi trường và công cụ}
 \label{sec:moitruong}
@@ -231,18 +232,141 @@ chủ đề: yêu cầu trực tiếp, khiếu nại/bồi thường, phản h�
 dưới dạng JSON có thể đọc bằng máy, bao gồm thông tin cần thu thập và chính sách theo giờ
 hành chính, giúp việc định tuyến nhất quán và dễ bảo trì.
 
-\section{Hệ thống quan sát và quản lý prompt}
+\section{Quan sát với OTel Gateway}
 \label{sec:observability}
 
-Mọi agent đều phát vết theo chuẩn OpenTelemetry tới một bộ thu (collector), sau đó phân
-phối tới Grafana Tempo và Langfuse. Vết ghi lại luồng gọi công cụ, mô hình được dùng, lượng
-token, thời gian tới token đầu tiên và latency tổng. Thông tin phiên và người dùng được
-truyền qua baggage để liên kết các vết trong cùng một hội thoại.
+\subsection{Cấu hình OTel Gateway}
+
+OTel Gateway được cài đặt bằng image \texttt{otel/\allowbreak opentelemetry-collector-contrib} với một
+tệp cấu hình gồm ba phần: \emph{receivers}, \emph{processors} và \emph{exporters}. Receiver
+\texttt{otlp} nhận vết qua gRPC ở cổng 4317 và HTTP ở cổng 4318; processor \texttt{batch}
+gom các vết trước khi gửi. Hai pipeline chính được cấu hình:
+
+\begin{itemize}
+  \item \texttt{traces}: chuyển vết thô tới backend lưu trữ (debug, Tempo).
+  \item \texttt{traces/langfuse}: đi qua processor \texttt{transform/langfuse} ánh xạ
+  attribute trung lập sang data model của Langfuse, rồi export bằng
+  \texttt{otlphttp/langfuse} tới endpoint ingest của Langfuse.
+\end{itemize}
+
+Exporter \texttt{otlphttp} tự POST tới \texttt{\{endpoint\}/v1/traces} với header xác thực
+Basic, kèm \texttt{sending\_queue} (kích thước 1000) và \texttt{retry\_on\_failure} (chu kỳ
+thử lại tăng dần từ 5 giây tới 30 giây, thời hạn 5 phút) nhằm không mất vết khi backend
+chậm. Các pipeline tương tự được tạo cho \texttt{metrics} và \texttt{logs}.
+
+\subsection{Attribute agent phát}
+
+Mỗi agent phát attribute theo chuẩn OpenTelemetry semantic conventions, ở dạng trung lập
+mọi backend. Bảng \ref{tab:otel-attr} liệt kê các attribute chính.
+
+\begin{table}[htbp]
+\centering
+\caption{Attribute chính mà agent phát theo chuẩn OpenTelemetry.}
+\label{tab:otel-attr}
+\small
+\begin{tabular}{@{}p{6.2cm}p{8.2cm}@{}}
+\toprule
+\textbf{Attribute} & \textbf{Ý nghĩa} \\
+\midrule
+\texttt{OTEL\_SERVICE\_NAME} & Tên service hiện trên trace \\
+\texttt{gen\_ai.operation.name} & Loại thao tác: \texttt{chat}, \texttt{invoke\_agent}, \texttt{execute\_tool} \\
+\texttt{gen\_ai.request.model} + \texttt{gen\_ai.request.*} & Mô hình và tham số sampling \\
+\texttt{gen\_ai.usage.input/output/total\_tokens} & Lượng token sử dụng \\
+\texttt{gen\_ai.input.messages} / \texttt{gen\_ai.output.messages} & Nội dung messages chuẩn OpenAI \\
+\texttt{gen\_ai.tool.call.arguments} / \texttt{.result} & Đầu vào/đầu ra của tool \\
+\texttt{gen\_ai.response.first\_token\_time} & Thời điểm sinh token đầu tiên (TTFT) \\
+\texttt{session.id} / \texttt{user.id} & Định danh phiên và người dùng \\
+\texttt{meta.<key>} & Metadata của request (dùng làm bộ lọc) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Ánh xạ sang Langfuse ở collector}
+
+Phép ánh xạ được khai báo ở processor \texttt{transform/langfuse} của collector, gồm:
+\texttt{service.name} làm tên trace; \texttt{meta.<key>} chuyển thành
+\texttt{langfuse.trace.metadata.<key>} để lọc trong UI; loại observation suy từ
+\texttt{gen\_ai.operation.name}; input/output của từng observation copy từ các attribute
+tương ứng; và TTFT ánh xạ thành thời điểm bắt đầu sinh token. Langfuse tự nhận diện các
+attribute chuẩn như \texttt{session.id}, \texttt{user.id}, \texttt{gen\_ai.usage.*} và
+\texttt{gen\_ai.request.*} mà không cần ánh xạ thủ công.
+
+Vì phép ánh xạ nằm ở collector, việc thêm hoặc đổi backend chỉ cần sửa tệp cấu hình
+collector và khởi động lại collector -- không cần sửa code agent và không cần restart agent.
+Đây là điểm chính giúp kiến trúc quan sát bền vững khi hệ thống mở rộng.
+
+\subsection{Quy trình sử dụng}
+
+Vết được xem trên Langfuse UI ở các tab Traces, Sessions và Agent Graph; trên Grafana có
+thể truy vấn bằng TraceQL theo \texttt{resource.service.name}. Thông tin phiên và người
+dùng được truyền qua OTel Baggage trong carrier \texttt{otel\_context} gửi kèm theo A2A/MCP;
+phía nhận, baggage processor copy hai entry này lên mọi span, kể cả span sinh ra ở process
+khác. Nhờ đó, một hội thoại nhiều lượt đi qua nhiều agent vẫn gom thành một session.
+
+\begin{ghichu}
+Quy trình đánh giá (eval) chủ động tắt OpenTelemetry, để vết của quá trình đánh giá không
+lẫn vào backend quan sát và không làm nhiễu số liệu vận hành.
+\end{ghichu}
 
 Prompt được quản lý tập trung qua MLflow Prompt Registry. Mỗi agent tham chiếu một prompt
 theo tên và nhãn (ví dụ \texttt{@production}), nhờ đó có thể cập nhật prompt cho tất cả
 agent mà không cần sửa mã hay triển khai lại. Cơ chế này tách cấu hình khỏi logic và hỗ
 trợ kiểm soát thay đổi.
+
+\section{Triển khai hệ thống lên Kubernetes}
+\label{sec:k8s-deploy}
+
+\subsection{Tổ chức manifests}
+
+Mỗi dịch vụ được tổ chức thành một thư mục manifests riêng gồm các nhóm tệp: \texttt{workloads}
+(Deployment), \texttt{configs} (ConfigMap), \texttt{secrets} (Secret), \texttt{networks}
+(Service, Ingress) và \texttt{images}. Cách tổ chức này giúp dễ quản lý, dễ tạo bản mới và
+tái sử dụng cấu hình giữa các dịch vụ. Bảng \ref{tab:k8s-services} liệt kê nhóm dịch vụ
+chính được triển khai.
+
+\begin{table}[htbp]
+\centering
+\caption{Nhóm dịch vụ triển khai trên Kubernetes.}
+\label{tab:k8s-services}
+\small
+\begin{tabular}{@{}p{5.4cm}p{9cm}@{}}
+\toprule
+\textbf{Nhóm} & \textbf{Thành phần} \\
+\midrule
+Workload mô hình (GPU) & LLM, embedding model, reranker, OCR \\
+Workload agent (CPU) & host agent, agent RAG, agent tracking, agent bưu cục \\
+Quan sát & Langfuse, Grafana, OTel Gateway \\
+Dữ liệu & Qdrant, PostgreSQL, MinIO \\
+Nền tảng & Airflow, mem0, registry nội bộ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Workload GPU và init container}
+
+Các Pod phục vụ mô hình yêu cầu \texttt{runtimeClassName: nvidia} để dùng GPU, và dùng
+\texttt{nodeSelector} để neo về node có card đồ họa. \texttt{terminationGracePeriodSeconds}
+đặt đủ dài để Pod dừng an toàn. Việc khởi động Pod có init container phụ trách chuẩn bị
+dữ liệu:
+
+\begin{itemize}
+  \item \textbf{Workload mô hình:} init container tải trọng số từ máy chủ lưu trữ nội bộ
+  (SFTP) về PVC; container chính sau đó khởi động vLLM và phục vụ mô hình.
+  \item \textbf{Workload agent:} init container tải mã agent từ kho Git nội bộ về PVC;
+  container chính sau đó chạy API server.
+\end{itemize}
+
+Cách này giữ image sát cơ bản, tách dữ liệu/biến động khỏi image, và cho phép cập nhật mô
+hình hoặc mã agent mà không cần build lại image.
+
+\subsection{Cấu hình, bản mật và kết nối nội bộ}
+
+Cấu hình runtime đặt ở ConfigMap; thông tin nhạy cảm (khóa xác thực, khóa API) đặt ở
+Secret; biến môi trường theo môi trường triển khai được quản lý cùng bộ manifests. Image
+lấy từ registry nội bộ của Tổng công ty. Các tên miền nội bộ cần phân giải được khai báo
+qua \texttt{hostAliases}. Trong giai đoạn phát triển và thử nghiệm cục bộ, hệ thống chạy
+bằng Docker Compose; khi đưa vào vận hành thì chuyển lên Kubernetes, giữ nguyên cấu hình
+logic của agent.
 
 \section{Khó khăn và giải pháp}
 \label{sec:khokhan}

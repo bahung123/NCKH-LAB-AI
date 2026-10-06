@@ -6,8 +6,10 @@ Trên nền tảng lý thuyết đã trình bày ở chương \ref{ch:coso}, ch�
 cụ thể của VNPost và đề xuất kiến trúc trợ lý ảo. Mục \ref{sec:baigtoan} làm rõ đặc thù
 bài toán; mục \ref{sec:yeucau} xác định yêu cầu; mục \ref{sec:multiagent} trình bày kiến
 trúc multi-agent; mục \ref{sec:pipeline-rag} và mục \ref{sec:pipeline-ft} mô tả pipeline
-\rag{} và pipeline \ft; mục \ref{sec:kien-truc-lai} đề xuất kiến trúc hybrid; và mục
-\ref{sec:hatang} trình bày hạ tầng và bảo mật.
+\rag{} và pipeline \ft; mục \ref{sec:kien-truc-lai} đề xuất kiến trúc hybrid; mục
+\ref{sec:hatang} trình bày hạ tầng phục vụ mô hình và bảo mật; mục \ref{sec:otgateway}
+trình bày kiến trúc quan sát dựa trên OTel Gateway; và mục \ref{sec:k8s} trình bày triển
+khai trên Kubernetes.
 
 \section{Đặc thù bài toán tại VNPost}
 \label{sec:baigtoan}
@@ -330,8 +332,143 @@ tầng; (ii) kiểm soát truy cập theo vai trò (RBAC) đối với dữ li�
 trong log trước khi dùng cho phân tích hoặc \ft; và (iv) phân quyền ở tầng dữ liệu, bảo
 đảm người dùng chỉ truy cập được phạm vi cho phép.
 
+\section{Kiến trúc quan sát: OTel Gateway \texorpdfstring{$\rightarrow$}{->} Langfuse}
+\label{sec:otgateway}
+
+\subsection{Nguyên tắc thiết kế}
+
+Hệ thống được quan sát theo nguyên tắc \emph{trung lập backend}: agent chỉ phát vết theo
+chuẩn OpenTelemetry semantic conventions và \emph{không phụ thuộc} vào backend nào. Toàn bộ
+việc kết nối tới backend được gom về một điểm duy nhất là \textbf{OTel Gateway} (OTel
+Collector). Nhờ đó, thêm một backend mới chỉ cần thêm một pipeline trong cấu hình
+collector, không phải sửa code agent và không cần restart agent.
+
+Agent phát vết qua OTLP tới collector; collector nhận ở hai giao thức gRPC (cổng 4317) và
+HTTP (cổng 4318). Mỗi backend có một pipeline riêng trong collector.
+
+\subsection{Hai pipeline: backend thô và Langfuse}
+
+Pipeline \texttt{traces} chuyển vết thô tới các backend dạng lưu trữ/xuất hiện (debug,
+Tempo). Pipeline \texttt{traces/langfuse} đi qua một \emph{transform processor} ánh xạ
+attribute trung lập sang data model của Langfuse, rồi export qua OTLP/HTTP tới endpoint
+ingest của Langfuse, kèm hàng đợi gửi (sending queue) và cơ chế thử lại (retry on failure)
+để không mất vết khi backend chậm.
+
+Phép ánh xạ chính thực hiện ở collector gồm:
+
+\begin{itemize}
+  \item \texttt{service.name} làm tên trace, khớp với
+  \texttt{OTEL\allowbreak\_SERVICE\allowbreak\_NAME} của agent.
+  \item \texttt{meta.\,<key>} $\rightarrow$ \texttt{langfuse.trace.metadata.<key>} để dùng
+  làm bộ lọc trong UI.
+  \item Loại observation suy từ \texttt{gen\_ai.operation.name}: \texttt{chat} $\rightarrow$
+  generation, \texttt{invoke\_agent} $\rightarrow$ agent (hiện trên Agent Graph),
+  \texttt{execute\_tool} $\rightarrow$ tool.
+  \item Input/output của generation và root span: \texttt{gen\_ai.input.messages},
+  \texttt{gen\_ai.output.messages}.
+  \item Input/output của tool: \texttt{gen\_ai.tool.call.arguments} và
+  \texttt{gen\_ai.tool.call.result}.
+  \item Input/output của agent từ xa qua A2A: \texttt{input.message},
+  \texttt{output.message}.
+  \item TTFT: \texttt{gen\_ai.response.first\_token\_time} $\rightarrow$ thời điểm bắt đầu
+  sinh token.
+\end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  node distance=7mm,
+  proc/.style={draw=vnpostgreen,fill=boxblue,rounded corners,minimum width=3.6cm,minimum height=9mm,align=center,font=\small},
+  proc2/.style={draw=vnpostdark,fill=white,rounded corners,minimum width=3.6cm,minimum height=9mm,align=center,font=\small},
+  arrow/.style={-{Latex[length=2mm]},thick,vnpostdark}
+]
+\node[proc] (agent) {Các agent\\(phát vết OTLP)};
+\node[proc,right=of agent] (gw) {OTel Gateway\\(Collector)};
+\node[proc2,above right=12mm and 12mm of gw] (raw) {Backend thô\\(Tempo / debug)};
+\node[proc2,below right=12mm and 12mm of gw] (lf) {Langfuse\\(self-hosted)};
+\node[font=\scriptsize,below=1mm of lf] {hiển thị + eval};
+\draw[arrow] (agent) -- (gw);
+\draw[arrow] (gw) -- (raw) node[midway,above,font=\scriptsize] {pipeline \texttt{traces}};
+\draw[arrow] (gw) -- (lf) node[midway,below,font=\scriptsize] {pipeline \texttt{traces/langfuse}};
+\end{tikzpicture}
+\caption{Kiến trúc quan sát: OTel Gateway là điểm kết nối duy nhất tới các backend.}
+\label{fig:otgateway}
+\end{figure}
+
+\subsection{Định danh phiên và người dùng}
+
+\texttt{session.id} và \texttt{user.id} được gắn trên các span chính và truyền qua
+\emph{OTel Baggage} trong carrier \texttt{otel\_context} gửi kèm theo A2A/MCP. Phía nhận,
+một baggage processor copy hai entry này lên mọi span, kể cả span sinh ra ở process khác.
+Nhờ đó, một hội thoại gồm nhiều lượt và đi qua nhiều agent vẫn được gom thành một session
+khi xem trên Langfuse (tab Traces / Sessions / Agent Graph).
+
+\section{Triển khai trên Kubernetes}
+\label{sec:k8s}
+
+\subsection{Tổ chức manifests}
+
+Các dịch vụ được đóng gói bằng Docker và triển khai trên Kubernetes bằng bộ manifests tổ
+chức theo kiểu Kustomize: mỗi dịch vụ một thư mục gồm \texttt{workloads} (Deployment),
+\texttt{configs} (ConfigMap), \texttt{secrets} (Secret), \texttt{networks} (Service,
+Ingress) và \texttt{images}. Trong giai đoạn phát triển và thử nghiệm cục bộ, hệ thống chạy
+bằng Docker Compose; khi đưa vào vận hành thì chuyển lên Kubernetes.
+
+\subsection{Workload GPU và init container}
+
+Với các workload phục vụ mô hình, Pod yêu cầu \texttt{runtimeClassName: nvidia} để dùng
+GPU, đồng thời dùng \texttt{nodeSelector} để neo về node có card đồ họa. Khởi động Pod có
+thêm \emph{init container} phụ trách chuẩn bị dữ liệu trước khi container chính chạy:
+
+\begin{itemize}
+  \item \textbf{Với workload mô hình:} init container tải trọng số từ máy chủ lưu trữ nội
+  bộ (SFTP) về \emph{PersistentVolumeClaim} (PVC), sau đó container chính khởi động vLLM
+  và phục vụ mô hình.
+  \item \textbf{Với workload agent:} init container tải mã agent từ kho Git nội bộ về PVC,
+  sau đó container chính chạy API server.
+\end{itemize}
+
+Cách này giúp giữ image sát cơ bản, tách phần dữ liệu/biến động ra khỏi image, và cho phép
+cập nhật mô hình hoặc mã agent mà không cần build lại image.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  node distance=6mm,
+  pod/.style={draw=vnpostgreen,fill=boxblue,rounded corners,minimum width=3.0cm,minimum height=7mm,align=center,font=\scriptsize},
+  grp/.style={draw=vnpostdark,rounded corners,align=center,font=\scriptsize\bfseries,inner sep=7pt},
+]
+\node[pod] (llm) {Pod LLM (vLLM, FP8)};
+\node[pod,below=of llm] (emb) {Pod embedding};
+\node[pod,below=of emb] (rrk) {Pod reranker};
+\node[pod,below=of rrk] (ocr) {Pod OCR};
+\node[grp,fit=(llm)(emb)(rrk)(ocr),label=above:{Node GPU (RuntimeClass nvidia)}] (gpu) {};
+
+\node[pod,right=14mm of llm] (host) {Pod host agent};
+\node[pod,below=of host] (spdv) {Pod agent RAG};
+\node[pod,below=of spdv] (trk) {Pod agent tracking};
+\node[pod,below=of trk] (buc) {Pod agent bưu cục};
+\node[grp,fit=(host)(spdv)(trk)(buc),label=above:{Node CPU}] (cpu) {};
+
+\node[pod,right=14mm of host] (lf) {Langfuse};
+\node[pod,below=of lf] (gr) {Grafana};
+\node[grp,fit=(lf)(gr),label=above:{Quan sát}] (obs) {};
+\end{tikzpicture}
+\caption{Topologies triển khai trên Kubernetes: workload GPU, workload agent và quan sát.}
+\label{fig:k8s}
+\end{figure}
+
+\subsection{Cấu hình, bản mật và registry}
+
+Cấu hình runtime đặt ở ConfigMap, thông tin nhạy cảm (khóa xác thực, khóa API) đặt ở Secret,
+riêng biến môi trường theo môi trường triển khai được quản lý cùng bộ manifests. Image lấy
+từ registry nội bộ của Tổng công ty; các tên miền nội bộ cần phân giải được khai báo qua
+\texttt{hostAliases}. \texttt{terminationGracePeriodSeconds} được đặt đủ dài để Pod dừng an
+toàn, không làm gián đoạn yêu cầu đang xử lý.
+
 \section*{Kết chương}
 \addcontentsline{toc}{section}{Kết chương}
 Chương này đã phân tích bài toán VNPost, xác định yêu cầu và đề xuất kiến trúc multi-agent
-kết hợp \rag{} lai với \ft{} theo mô hình lai. Chương tiếp theo mô tả việc triển khai thực
-nghiệm các thành phần này cùng các tham số cụ thể.
+kết hợp \rag{} lai với \ft{} theo mô hình hybrid, cùng hai thành phần nền tảng: kiến trúc
+quan sát dựa trên OTel Gateway và cách triển khai trên Kubernetes. Chương tiếp theo mô tả
+việc triển khai thực nghiệm các thành phần này cùng các tham số cụ thể.

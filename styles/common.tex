@@ -60,6 +60,10 @@
 \newcommand{\rag}{RAG}
 \newcommand{\ft}{fine-tuning}
 
+% Cho phép kéo giãn dòng khi gặp token dài (vd. tên attribute) -> không tràn lề
+\tolerance=9999
+\emergencystretch=3em
+
 % Khối prompt/code: dùng fancyvrb (xử lý Unicode tiếng Việt đúng với XeLaTeX)
 \DefineVerbatimEnvironment{prompt}{Verbatim}{%
   frame=single, rulecolor=\color{vnpostgreen}, fontsize=\footnotesize,
