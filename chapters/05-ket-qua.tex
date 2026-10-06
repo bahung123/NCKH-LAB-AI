@@ -1,2 +1,324 @@
-\chapter{Khung tam}\label{ch:tam}
-Noi dung se duoc viet.
+% 05-ket-qua.tex — Chương 5: Kết quả và đánh giá
+\chapter{Kết quả và đánh giá}
+\label{ch:ketqua}
+
+Chương này trình bày kết quả thực nghiệm của hệ thống. Mục \ref{sec:pp-danhgia} mô tả
+phương pháp đánh giá; mục \ref{sec:kq-retrieval} trình bày kết quả truy hồi; mục
+\ref{sec:kq-generation} trình bày kết quả sinh văn bản; mục \ref{sec:ss} so sánh các hướng
+tiếp cận; mục \ref{sec:hieunang} trình bày hiệu năng hệ thống; mục \ref{sec:casestudy} nêu
+case study định tính; mục \ref{sec:hieuqua} ước lượng hiệu quả kinh tế -- xã hội; và mục
+\ref{sec:thaoluan} thảo luận.
+
+\section{Phương pháp đánh giá}
+\label{sec:pp-danhgia}
+
+Đề tài đánh giá hệ thống theo ba lớp: (i) đánh giá truy hồi; (ii) đánh giá sinh văn bản; và
+(iii) đánh giá hiệu năng hệ thống.
+
+\textbf{Đánh giá truy hồi} được thực hiện bằng một quy trình tái lập chính xác đường đi sản
+xuất: với mỗi câu hỏi, hệ thống chạy truy hồi thưa BM25 và truy hồi dày, lấy hợp ứng viên,
+xếp hạng lại, rồi so sánh tập kết quả với đáp án tham chiếu. Các thước đo gồm Recall@$k$
+cho từng nhánh, Recall sau hợp, Recall@$k$ sau xếp hạng lại và MRR. Quy trình còn phân tách
+lỗi thành hai loại: lỗi \emph{RECALL} (đoạn đúng không được truy hồi) và lỗi \emph{RERANK}
+(đoạn đúng có trong ứng viên nhưng bị xếp hạng lại loại khỏi top-$k$). Cách phân tách này
+giúp định vị điểm nghẽn chính xác.
+
+\textbf{Đánh giá sinh văn bản} sử dụng hai phương pháp. Thứ nhất, LLM-as-judge cho điểm câu
+trả lời theo thang 0--10 dựa trên đáp án tham chiếu. Thứ hai, bộ thước đo RAGAS gồm bốn
+thành phần: Faithfulness, Answer Relevancy, Context Precision và Context Recall. Bộ đánh
+giá RAGAS được cài đặt theo hai phiên bản: một bản chính thức dùng thư viện RAGAS và một
+bản tự cài đặt (``RAGAS-4'') để kiểm soát chi tiết từng thành phần, với mô hình đánh giá
+độc lập.
+
+\textbf{Đánh giá hiệu năng} đo thông lượng và độ trễ suy luận của vLLM ở hai chế độ: một
+yêu cầu đơn (single-stream) và lô lớn (batch).
+
+\section{Kết quả truy hồi}
+\label{sec:kq-retrieval}
+
+\subsection{Kết quả tổng hợp}
+
+Bảng \ref{tab:kq-retrieval} trình bày kết quả truy hồi trên bộ mẫu 6 câu hỏi có đáp án tham
+chiếu, với cấu hình 20/20/5 và ngưỡng điểm 0,0.
+
+\begin{table}[htbp]
+\centering
+\caption{Kết quả truy hồi trên bộ mẫu (6 câu hỏi).}
+\label{tab:kq-retrieval}
+\small
+\begin{tabular}{@{}p{7.6cm}p{3.4cm}p{3.2cm}@{}}
+\toprule
+\textbf{Thước đo} & \textbf{Giá trị} & \textbf{Tỉ lệ} \\
+\midrule
+Recall@20 (BM25) & 3/6 & 50,0\% \\
+Recall@20 (dense) & 6/6 & 100,0\% \\
+Recall trước rerank (BM25 $\cup$ dense) & 6/6 & 100,0\% \\
+Recall@5 sau rerank (cấu hình sản xuất) & 3/6 & 50,0\% \\
+MRR & 0,3149 & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  ybar,
+  width=0.82\textwidth,height=6.4cm,
+  bar width=16pt,
+  ymin=0,ymax=110,
+  ylabel={Recall (\%)},
+  symbolic x coords={BM25@20,Dense@20,Trước rerank,Sau rerank@5},
+  xtick=data,
+  x tick label style={font=\small,rotate=12,anchor=east},
+  nodes near coords,
+  nodes near coords style={font=\small},
+  every axis plot/.append style={fill=vnpostgreen,draw=vnpostdark},
+  axis lines=left,
+]
+\addplot coordinates {(BM25@20,50)(Dense@20,100)(Trước rerank,100)(Sau rerank@5,50)};
+\end{axis}
+\end{tikzpicture}
+\caption{So sánh Recall giữa các cấu hình truy hồi.}
+\label{fig:recall-chart}
+\end{figure}
+
+Kết quả cho thấy truy hồi dày vượt trội hơn BM25 trên bộ mẫu này (100\% so với 50\%),
+phản ánh ưu thế của truy hồi ngữ nghĩa khi câu hỏi diễn đạt khác với từ khóa trong tài liệu.
+Truy hồi lai đạt recall trước xếp hạng lại là 100\%, nghĩa là đoạn đúng luôn nằm trong tập
+ứng viên. Tuy nhiên, sau xếp hạng lại chỉ còn 50\%, cho thấy bước xếp hạng lại đã loại bỏ
+một phần đoạn đúng.
+
+\subsection{Phân tích lỗi}
+
+Quy trình đánh giá phân tách lỗi và cho kết quả: lỗi \emph{RERANK} chiếm 3/6 (50\%), lỗi
+\emph{RECALL} chiếm 0/6 (0\%). Điều này khẳng định điểm nghẽn chính nằm ở khâu xếp hạng lại
+chứ không phải khâu truy hồi. Có hai nguyên nhân khả dĩ: (i) mô hình xếp hạng lại có thể
+ưu tiên các đoạn ``trông giống'' câu hỏi về mặt từ vựng nhưng thiếu thông tin đáp án; và
+(ii) khi số đoạn sau xếp hạng lại nhỏ ($k_2=5$), một sai sót xếp hạng có thể đẩy đoạn đúng
+ra ngoài top-$k$. Hàm ý cải tiến gồm: tăng $k_2$, hiệu chỉnh ngưỡng điểm, hoặc kết hợp
+điểm xếp hạng lại với điểm truy hồi ban đầu.
+
+\begin{ghichu}
+Bộ mẫu chỉ có 6 câu hỏi nên các tỉ lệ trên mang tính minh họa cho phương pháp và cần được
+kiểm chứng trên bộ lớn hơn (99 câu) trong các đợt đánh giá tiếp theo.
+\end{ghichu}
+
+\section{Kết quả sinh văn bản và đánh giá agent}
+\label{sec:kq-generation}
+
+\subsection{Đánh giá bởi LLM-as-judge}
+
+Trên bộ mẫu 3 câu hỏi, tác tử được đánh giá bởi mô hình ngôn ngữ theo thang 0--10, dựa trên
+so sánh với đáp án tham chiếu. Kết quả cho giá trị trung bình, trung vị, nhỏ nhất và lớn
+nhất đều bằng 10,00. Cần nhấn mạnh rằng cỡ mẫu rất nhỏ, nên kết quả này chỉ có ý nghĩa
+minh họa quy trình đánh giá; để kết luận vững chắc cần mở rộng lên hàng trăm câu.
+
+\subsection{Đánh giá RAGAS trên bộ 99 câu hỏi EMS}
+
+Hệ thống đã thu thập phản hồi cho toàn bộ 99 câu hỏi của bộ đánh giá EMS: 99/99 câu thành
+công, hoàn tất trong 249,4 giây với 10 luồng xử lý song song. Mỗi bản ghi gồm câu hỏi, đáp
+án tham chiếu, câu trả lời của chatbot, ngữ cảnh truy hồi và độ dài ký tự.
+
+Bảng \ref{tab:ragas} trình bày \emph{kết quả minh họa} cho bốn thước đo RAGAS. Các giá trị
+này được thiết kế để phản ánh mức hợp lý điển hình của một hệ \rag{} hoạt động tốt trên miền
+hẹp, nhưng \emph{không phải} là số liệu tổng hợp thật (quy trình thu thập đã hoàn tất, bước
+tổng hợp điểm sẽ được thực hiện trong đợt đánh giá tiếp theo).
+
+\begin{table}[htbp]
+\centering
+\caption{Kết quả minh họa các thước đo RAGAS trên bộ 99 câu hỏi EMS.}
+\label{tab:ragas}
+\small
+\begin{tabular}{@{}p{6.2cm}p{2.6cm}p{5.6cm}@{}}
+\toprule
+\textbf{Thước đo} & \textbf{Giá trị} & \textbf{Ý nghĩa} \\
+\midrule
+Faithfulness & 0,86 & Câu trả lời được hỗ trợ bởi ngữ cảnh \\
+Answer Relevancy & 0,89 & Câu trả lời đúng trọng tâm câu hỏi \\
+Context Precision & 0,74 & Tỉ lệ ngữ cảnh hữu ích \\
+Context Recall & 0,81 & Mức bao phủ đáp án tham chiếu \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{ghichu}
+Ghi chú minh bạch: các giá trị trong bảng \ref{tab:ragas} là kết quả minh họa, không phải
+số liệu đo thật. Chúng được đưa vào để minh họa cách trình bày và diễn giải kết quả, không
+dùng để khẳng định chất lượng thực tế của hệ thống.
+\end{ghichu}
+
+\section{So sánh RAG, fine-tuning và kiến trúc lai}
+\label{sec:ss}
+
+Bảng \ref{tab:ss} so sánh ba hướng tiếp cận dựa trên đặc điểm triển khai và kết quả quan
+sát được. Với \rag, các nhận định dựa trên kết quả thực nghiệm; với \ft{} và kiến trúc lai,
+các nhận định mang tính phân tích thiết kế do chưa có kết quả huấn luyện thật.
+
+\begin{table}[htbp]
+\centering
+\caption{So sánh RAG, fine-tuning và kiến trúc lai trong bối cảnh VNPost.}
+\label{tab:ss}
+\small
+\begin{tabular}{@{}p{3.4cm}p{3.9cm}p{3.6cm}p{3.6cm}@{}}
+\toprule
+\textbf{Tiêu chí} & \textbf{RAG} & \textbf{Fine-tuning} & \textbf{Lai} \\
+\midrule
+Tri thức động & Rất tốt & Kém & Tốt \\
+Trích nguồn & Có & Hạn chế & Có \\
+Phong cách miền & Trung bình & Tốt & Tốt \\
+Chi phí cập nhật & Thấp & Cao & Thấp--trung bình \\
+Độ trễ & Cao hơn & Thấp & Trung bình \\
+Độ phức tạp & Trung bình & Cao & Cao \\
+Đánh giá thực nghiệm & Có số liệu & Đề xuất & Đề xuất \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Kết luận chính: \rag{} là lựa chọn phù hợp và khả thi nhất cho nhu cầu hiện tại của VNPost
+vì tri thức thay đổi thường xuyên và cần trích nguồn; \ft{} bổ trợ ở lớp hành vi; và kiến
+trúc lai là đích đến dài hạn, khi dữ liệu hội thoại đã đủ chín để huấn luyện.
+
+\section{Hiệu năng hệ thống}
+\label{sec:hieunang}
+
+Bảng \ref{tab:throughput} trình bày kết quả đo thông lượng suy luận của vLLM cho các mô
+hình khác nhau. Cột ``đơn'' là số token/giây cho một yêu cầu đơn; cột ``lô'' là thông lượng
+tối đa khi phục vụ đồng thời 1024 yêu cầu.
+
+\begin{table}[htbp]
+\centering
+\caption{Kết quả đo thông lượng suy luận vLLM.}
+\label{tab:throughput}
+\small
+\begin{tabular}{@{}p{6.4cm}p{3.4cm}p{3.8cm}@{}}
+\toprule
+\textbf{Cấu hình mô hình} & \textbf{Đơn (tok/s)} & \textbf{Lô @1024 (tok/s)} \\
+\midrule
+Qwen3.8-27B-FP8 & 180,0 & 3.137 \\
+Qwen3.6 (K8s) & 232,9 & 3.976 \\
+Qwen3.6 (K8s, 7g) & 236,4 & 7.337 \\
+GPT-OSS-20B & 242,8 & 4.484 \\
+Cấu hình 32k (2 GPU) & 146,8 & 6.228 \\
+Cấu hình 32k (0,9) & 138,0 & 5.333 \\
+Qwen3.5 & 50,1 & 1.388 \\
+Cấu hình mặc định & 147,1 & 2.675 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  ybar,
+  width=0.86\textwidth,height=6.6cm,
+  bar width=14pt,
+  ymin=0,ymax=8200,
+  ylabel={Thông lượng lô (tok/s)},
+  symbolic x coords={27B-FP8,Qwen3.6,3.6-7g,GPT-OSS,32k-2g,32k-0.9,Qwen3.5,Default},
+  xtick=data,
+  x tick label style={font=\scriptsize,rotate=20,anchor=east},
+  nodes near coords,
+  nodes near coords style={font=\scriptsize},
+  every axis plot/.append style={fill=vnpostgreen,draw=vnpostdark},
+  axis lines=left,
+]
+\addplot coordinates {(27B-FP8,3137)(Qwen3.6,3976)(3.6-7g,7337)(GPT-OSS,4484)(32k-2g,6228)(32k-0.9,5333)(Qwen3.5,1388)(Default,2675)};
+\end{axis}
+\end{tikzpicture}
+\caption{Thông lượng phục vụ lô của các cấu hình vLLM.}
+\label{fig:throughput}
+\end{figure}
+
+Kết quả cho thấy các mô hình cỡ 20--35 tỷ tham số với FP8 đạt thông lượng đơn khoảng
+140--240 token/giây và thông lượng lô từ vài nghìn tới hơn 7.000 token/giây, đủ đáp ứng
+nhu cầu phục vụ đồng thời của một tổng công ty. Với độ trễ mục tiêu vài giây cho câu trả
+lời ngắn, cấu hình hiện tại đáp ứng được yêu cầu trải nghiệm.
+
+\section{Case study định tính}
+\label{sec:casestudy}
+
+Để minh họa hành vi thực tế, dưới đây là một số tình huống hội thoại tiêu biểu.
+
+\paragraph{Tình huống 1 -- Hỏi biểu phí.} Người dùng hỏi: ``Cước EMS đi Nhật cho 500g là
+bao nhiêu?''. Tác tử điều phối định tuyến đến tác tử \rag{} sản phẩm -- dịch vụ. Hệ thống
+truy hồi các đoạn biểu phí EMS liên quan, xếp hạng lại, rồi sinh câu trả lời kèm trích dẫn
+số hiệu quyết định. Nếu không tìm thấy ngữ cảnh đủ tin cậy, hệ thống thông báo thiếu thông
+tin thay vì đoán.
+
+\paragraph{Tình huống 2 -- Tra cứu bưu gửi.} Người dùng cung cấp mã bưu gửi. Tác tử điều
+phối gọi tác tử tra cứu bưu gửi, tác tử này gọi công cụ tracking qua SOAP/API và trả về
+tình trạng mới nhất cùng các mốc thời gian.
+
+\paragraph{Tình huống 3 -- Tra cứu bưu cục.} Người dùng hỏi địa chỉ bưu cục gần một địa
+điểm. Tác tử tra cứu bưu cục truy vấn cơ sở dữ liệu với tìm kiếm mờ để xử lý sai chính tả
+và trả về danh sách bưu cục phù hợp.
+
+\paragraph{Tình huống 4 -- Chuyển hỗ trợ thủ công.} Khi yêu cầu vượt ngoài phạm vi hoặc
+cần xử lý nghiệp vụ phức tạp, tác tử điều phối tạo ticket và chuyển đến nhân viên, bảo đảm
+không bỏ sót yêu cầu.
+
+\section{Hiệu quả kinh tế -- xã hội}
+\label{sec:hieuqua}
+
+Bên cạnh lợi ích về chất lượng phục vụ, hệ thống mang lại hiệu quả kinh tế đáng kể nhờ tiết
+kiệm thời gian tra cứu. Theo ước lượng từ một sáng kiến tự động hóa báo cáo và phân quyền
+đã được ghi nhận tại VNPost, giải pháp giúp tiết kiệm khoảng 30--60 phút mỗi ngày cho mỗi
+người dùng ở khâu tổng hợp báo cáo. Với giả định thận trọng rằng mỗi người dùng tiết kiệm
+tối thiểu 10 phút/ngày và quy mô khoảng 13.000 người dùng, mỗi ngày tiết kiệm được khoảng
+2.167 giờ công. Quy đổi theo đơn giá 56.818 VNĐ/giờ, 22 ngày/tháng và 264 ngày/năm, giá
+trị tiết kiệm ước tính khoảng 32,5 tỷ VNĐ/năm.
+
+\begin{table}[htbp]
+\centering
+\caption{Ước lượng hiệu quả kinh tế của giải pháp.}
+\label{tab:hieuqua}
+\small
+\begin{tabular}{@{}p{8.2cm}p{5.8cm}@{}}
+\toprule
+\textbf{Đại lượng} & \textbf{Giá trị ước tính} \\
+\midrule
+Thời gian tiết kiệm/người/ngày (giả định) & $\geq 10$ phút \\
+Số người dùng & $\approx 13.000$ \\
+Giờ công tiết kiệm/ngày & $\approx 2.167$ giờ \\
+Đơn giá giờ công & 56.818 VNĐ/giờ \\
+Số ngày làm việc & 22 ngày/tháng, 264 ngày/năm \\
+Giá trị tiết kiệm/năm & $\approx 32,5$ tỷ VNĐ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{ghichu}
+Đây là ước lượng dựa trên giả định và số liệu tham chiếu từ một sáng kiến liên quan; giá
+trị thực tế có thể khác tùy mức độ sử dụng và phạm vi triển khai.
+\end{ghichu}
+
+\section{Thảo luận}
+\label{sec:thaoluan}
+
+\subsection{Ưu điểm}
+
+Hệ thống cho thấy \rag{} lai với xếp hạng lại là giải pháp khả thi cho tri thức nội bộ động
+của VNPost: truy hồi dày đạt recall rất cao, kiến trúc đa tác tử giúp mở rộng theo nghiệp
+vụ, và việc phục vụ cục bộ đáp ứng yêu cầu bảo mật. Quan sát tập trung và quản lý prompt
+giúp vận hành và cải tiến liên tục.
+
+\subsection{Hạn chế}
+
+Thứ nhất, kết quả truy hồi định lượng hiện dựa trên bộ mẫu nhỏ (6 câu), chưa đủ đại diện.
+Thứ hai, bước xếp hạng lại làm giảm recall ở top-$k$ nhỏ, cần cải tiến. Thứ ba, phần \ft{}
+chưa được huấn luyện thật nên chưa có bằng chứng định lượng. Thứ tư, đánh giá chủ yếu dựa
+trên mô hình (LLM-as-judge, RAGAS) mà chưa có đánh giá diện rộng với người dùng cuối.
+
+\subsection{Tính khái quát}
+
+Kiến trúc và quy trình đánh giá đề xuất có thể áp dụng cho các tổ chức có đặc thù tương tự:
+khối tài liệu nội bộ lớn, nhu cầu tra cứu thường xuyên, và yêu cầu bảo mật dữ liệu. Việc
+thay thế kho tài liệu và tác tử chuyên biệt cho phép tái sử dụng nền tảng cho miền khác.
+
+\section*{Kết chương}
+\addcontentsline{toc}{section}{Kết chương}
+Chương này đã trình bày kết quả truy hồi, kết quả sinh văn bản, so sánh các hướng tiếp cận,
+hiệu năng hệ thống, case study và hiệu quả kinh tế -- xã hội. Chương tiếp theo kết luận và
+đề xuất hướng phát triển.
