@@ -8,7 +8,7 @@ agent \rag. Prompt thực tế được quản lý tập trung qua MLflow Prompt
 \section*{A.1. Prompt agent điều phối (host)}
 \addcontentsline{toc}{section}{A.1. Prompt agent điều phối}
 
-\begin{lstlisting}
+\begin{prompt}
 Bạn là trợ lý ảo của Tổng công ty Bưu điện Việt Nam (VNPost).
 Nhiệm vụ: hiểu yêu cầu người dùng, duy trì ngữ cảnh hội thoại, và định
 tuyến đến agent chuyên biệt phù hợp.
@@ -25,12 +25,12 @@ Nguyên tắc:
 3. Không bịa số liệu, số hiệu văn bản hoặc chính sách.
 4. Khi nhận kết quả từ agent chuyên biệt, hợp nhất thành câu trả lời
    mạch lạc, có trích dẫn nguồn khi có.
-\end{lstlisting}
+\end{prompt}
 
 \section*{A.2. Prompt agent RAG}
 \addcontentsline{toc}{section}{A.2. Prompt agent RAG}
 
-\begin{lstlisting}
+\begin{prompt}
 Bạn là agent hỏi đáp trên tài liệu nội bộ của VNPost.
 
 Bạn được cung cấp:
@@ -46,7 +46,7 @@ Nguyên tắc trả lời:
 3. Trích dẫn nguồn (tiêu đề/số hiệu văn bản) cho mỗi thông tin quan trọng.
 4. Trình bày ngắn gọn, đúng trọng tâm, dùng định dạng phù hợp (bảng nếu
    là biểu phí).
-\end{lstlisting}
+\end{prompt}
 
 \chapter{Bảng cấu hình tham số}
 \label{app:config}
@@ -106,7 +106,7 @@ Quan sát & OpenTelemetry, Langfuse, Grafana Tempo \\
 \chapter{Mẫu hội thoại minh họa}
 \label{app:chat}
 
-\begin{lstlisting}
+\begin{prompt}
 [Người dùng] Cước EMS đi Nhật cho bưu gửi 500g là bao nhiêu?
 
 [Agent RAG] Theo biểu phí EMS hiện hành (trích Quyết định số ...), cước
@@ -124,7 +124,7 @@ kiểm tra lại trước khi gửi.
 [Agent tra cứu bưu cục] Các bưu cục gần khu vực ... :
 1. Bưu cục ... - địa chỉ ... - giờ mở cửa ...
 2. Bưu cục ... - địa chỉ ... - giờ mở cửa ...
-\end{lstlisting}
+\end{prompt}
 
 \begin{ghichu}
 Các ví dụ trong phụ lục đã được lược giản và thay thế số liệu bằng dấu ``...'' để tránh

@@ -19,7 +19,8 @@
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
 \usepackage{enumitem}
-\usepackage{listings}
+\usepackage{fancyvrb}
+\usepackage{fvextra}
 \usepackage{fancyhdr}
 \usepackage{geometry}
 \usepackage{titlesec}
@@ -59,10 +60,11 @@
 \newcommand{\rag}{RAG}
 \newcommand{\ft}{fine-tuning}
 
-% listings
-\lstset{basicstyle=\ttfamily\small,backgroundcolor=\color{lightgray},frame=single,
-  rulecolor=\color{vnpostgreen},breaklines=true,columns=fullflexible,
-  showstringspaces=false,keepspaces=true,keywordstyle=\color{vnpostdark}\bfseries}
+% Khối prompt/code: dùng fancyvrb (xử lý Unicode tiếng Việt đúng với XeLaTeX)
+\DefineVerbatimEnvironment{prompt}{Verbatim}{%
+  frame=single, rulecolor=\color{vnpostgreen}, fontsize=\footnotesize,
+  framesep=5pt, xleftmargin=2pt, xrightmargin=2pt, baselinestretch=1.0,
+  breaklines=true, breaksymbolleft={}, breaksymbolright={}}
 
 % Header/footer
 \pagestyle{fancy}

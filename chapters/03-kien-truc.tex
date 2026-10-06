@@ -75,17 +75,17 @@ truy cập công cụ của mình qua giao thức MCP.
 \begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[
-  node distance=9mm,
+  node distance=8mm,
   host/.style={draw=vnpostdark,fill=vnpostgreen,text=white,rounded corners,minimum width=3.4cm,minimum height=1.1cm,align=center,font=\small\bfseries},
-  agent/.style={draw=vnpostgreen,fill=boxblue,rounded corners,minimum width=3.1cm,minimum height=1cm,align=center,font=\small},
-  sys/.style={draw=vnpostdark,fill=white,rounded corners,minimum width=2.4cm,minimum height=0.9cm,align=center,font=\scriptsize},
+  agent/.style={draw=vnpostgreen,fill=boxblue,rounded corners,minimum width=3.2cm,minimum height=1cm,align=center,font=\small},
+  sys/.style={draw=vnpostdark,fill=white,rounded corners,minimum width=2.6cm,minimum height=0.9cm,align=center,font=\scriptsize},
   arrow/.style={-{Latex[length=2mm]},thick,vnpostdark},
   biarrow/.style={{Latex[length=2mm]}-{Latex[length=2mm]},thick,vnpostdark}
 ]
 \node[host] (host) {Agent điều phối (Host)};
-\node[agent,below left=16mm and 30mm of host] (spdv) {Agent RAG\\sản phẩm -- dịch vụ};
-\node[agent,below=16mm of host] (buugui) {Agent tra cứu\\bưu gửi};
-\node[agent,below right=16mm and 30mm of host] (buucuc) {Agent tra cứu\\bưu cục};
+\node[agent,below=14mm of host] (buugui) {Agent tra cứu\\bưu gửi};
+\node[agent,left=6mm of buugui] (spdv) {Agent RAG\\sản phẩm -- dịch vụ};
+\node[agent,right=6mm of buugui] (buucuc) {Agent tra cứu\\bưu cục};
 \node[sys,below=of spdv] (qdrant) {Qdrant + reranker};
 \node[sys,below=of buugui] (track) {Hệ thống tracking};
 \node[sys,below=of buucuc] (pg) {CSDL bưu cục};
@@ -122,8 +122,8 @@ Pha indexing biến tài liệu thô thành các chunk vector trong Qdrant qua c
   văn bản, ngày ban hành và tóm tắt do mô hình ngôn ngữ sinh ra.
   \item \textbf{Chunking:} văn bản được chia thành các chunk nhận biết cấu trúc, với độ dài
   tối đa và độ chồng lấn hợp lý, bảo toàn bảng biểu.
-  \item \textbf{Embedding và lưu trữ:} mỗi chunk được biểu diễn thành embedding vector bằng embedding model và
-  lưu vào Qdrant, cùng sparse vector cho BM25.
+  \item \textbf{Embedding và lưu trữ:} mỗi chunk được biểu diễn thành embedding vector bằng
+  embedding model, rồi lưu vào Qdrant cùng sparse vector cho BM25.
 \end{enumerate}
 
 \subsection{Pha retrieval và sinh}
@@ -154,7 +154,7 @@ Khi có câu hỏi, hệ thống thực hiện:
 \node[proc,below=of meta] (chunk) {Chunking nhận biết cấu trúc (bảo toàn bảng)};
 \node[proc,below=of chunk] (emb) {Embedding vector Qwen3 + sparse vector BM25};
 \node[proc,below=of emb] (store) {Lưu Qdrant (dense COSINE + sparse IDF)};
-\node[proc,below=of store] (ret) {Hybrid retrieval top-20/20 $\rightarrow$ hợp $\rightarrow$ rerank $\rightarrow$ top-5};
+\node[proc,below=of store] (ret) {Hybrid retrieval top-20/20 $\rightarrow$ union $\rightarrow$ rerank $\rightarrow$ top-5};
 \node[proc,below=of ret] (gen) {LLM sinh câu trả lời có trích nguồn};
 \draw[arrow] (doc) -- (ocr);
 \draw[arrow] (ocr) -- (meta);
@@ -298,7 +298,7 @@ thông báo thiếu thông tin hoặc tạo ticket, tránh sinh câu trả lời
 \node[proc] (q) {Câu hỏi người dùng};
 \node[dec,below=of q] (router) {Router};
 \node[proc,below left=14mm and 26mm of router] (rag) {RAG (tri thức động)};
-\node[proc,below right=14mm and 26mm of router] (ft) {Mô hình fine-tuning (hành vi)};
+\node[proc,below right=14mm and 26mm of router] (ft) {Mô hình fine-tuning};
 \node[proc,below=26mm of router] (comb) {Hợp nhất câu trả lời};
 \node[proc,below=of comb] (ans) {Câu trả lời cuối (có trích nguồn)};
 \draw[arrow] (q) -- (router);

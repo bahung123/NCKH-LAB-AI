@@ -118,10 +118,10 @@ Số chiều embedding & 4096 & 4096 \\
 
 \subsection{Embedding câu hỏi và prompt}
 
-Câu hỏi được embedding với chỉ dẫn (instruction) phù hợp cho retrieval. Prompt hệ thống của agent
-\rag{} được quản lý tập trung qua MLflow Prompt Registry (ví dụ tham chiếu
-\texttt{prompts:/tct-rag-agent@production}), cho phép cập nhật mà không cần triển khai lại
-mã. Prompt quy định rõ: chỉ trả lời dựa trên ngữ cảnh retrieval, trích nguồn, và từ chối
+Câu hỏi được embedding với chỉ dẫn (instruction) phù hợp cho retrieval. Prompt hệ thống của
+agent \rag{} được quản lý tập trung qua MLflow Prompt Registry (ví dụ \texttt{tct-rag-agent}),
+cho phép cập nhật mà không cần triển khai lại mã nguồn. Prompt quy định rõ: chỉ trả lời dựa
+trên ngữ cảnh retrieval, trích nguồn, và từ chối
 khi thiếu thông tin.
 
 \section{Thiết kế fine-tuning}

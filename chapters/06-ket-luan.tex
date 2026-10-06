@@ -10,7 +10,7 @@ Bưu điện Việt Nam, dựa trên mô hình ngôn ngữ lớn kết hợp k�
 
 \begin{enumerate}
   \item \textbf{Hệ thống hóa cơ sở lý thuyết:} làm rõ kiến trúc Transformer, cơ chế của
-  \rag{} (chunking, embedding, sparse/dense/hybrid retrieval, rerank), các phương pháp \ft{}
+  \rag{} (chunking, embedding, hybrid retrieval, rerank), các phương pháp \ft{}
   (SFT, LoRA/QLoRA, DPO), các thước đo đánh giá và nền tảng triển khai (vLLM, FP8, MCP, A2A,
   OpenTelemetry, MLflow). Từ đó, báo cáo lập luận cho kiến trúc hybrid \rag{} + \ft.
   \item \textbf{Thiết kế kiến trúc multi-agent:} đề xuất kiến trúc gồm một agent điều phối và
@@ -20,8 +20,8 @@ Bưu điện Việt Nam, dựa trên mô hình ngôn ngữ lớn kết hợp k�
   trên Qdrant, kết hợp rerank bằng cross-encoder, cùng quy trình tiền xử lý tài liệu
   (OCR, Markdown hóa, metadata hóa, structure-aware chunking).
   \item \textbf{Đề xuất pipeline \ft:} thiết kế quy trình thu thập dữ liệu, ẩn PII và fine-tuning
-  cho cả ba loại mô hình -- LLM (LoRA/QLoRA), embedding model (contrastive, hard negatives)
-  và reranker (cross-encoder) -- rồi phục vụ bằng vLLM, kèm tiêu chí quyết định khi nào dùng
+  cho cả ba loại mô hình: LLM (LoRA/QLoRA), embedding model (contrastive learning) và
+  reranker cross-encoder; phục vụ bằng vLLM, kèm tiêu chí quyết định khi nào dùng
   \rag, \ft{} hoặc kết hợp.
   \item \textbf{Đánh giá định lượng:} trên bộ mẫu, dense retrieval đạt Recall@20 = 100\% trong
   khi cấu hình sản xuất sau rerank đạt Recall@5 = 50\% và MRR = 0,3149; phân tích lỗi

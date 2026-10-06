@@ -123,7 +123,7 @@ Khi inference, mô hình sinh token lần lượt theo một chiến lược gi�
 (temperature) điều chỉnh độ ngẫu nhiên; top-$k$ và top-$p$ (nucleus sampling) giới hạn
 tập token được chọn, giúp cân bằng giữa tính đa dạng và tính ổn định. Chất lượng đầu ra
 phụ thuộc rất lớn vào \emph{prompt}: kỹ thuật zero-shot, few-shot (đưa ví dụ)
-và Chain-of-Thought (CoT) (Chain-of-Thought -- CoT) \cite{wei2022cot} giúp định hướng mô hình giải
+và Chain-of-Thought (CoT) \cite{wei2022cot} giúp định hướng mô hình giải
 quyết tác vụ.
 
 \section{RAG (Retrieval-Augmented Generation)}
@@ -149,9 +149,9 @@ hình sinh câu trả lời.
 \begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[
-  node distance=8mm,
-  proc/.style={draw=vnpostgreen,fill=boxblue,rounded corners,minimum width=2.6cm,minimum height=9mm,align=center,font=\small},
-  data/.style={draw=vnpostdark,fill=white,cylinder,shape border rotate=90,minimum width=2cm,minimum height=1.2cm,align=center,font=\small,aspect=0.35},
+  node distance=5mm,
+  proc/.style={draw=vnpostgreen,fill=boxblue,rounded corners,minimum width=2.4cm,minimum height=9mm,align=center,font=\small},
+  data/.style={draw=vnpostdark,fill=white,cylinder,shape border rotate=90,minimum width=1.8cm,minimum height=1.2cm,align=center,font=\small,aspect=0.35},
   arrow/.style={-{Latex[length=2mm]},thick,vnpostdark}
 ]
 \node[proc] (q) {Câu hỏi};
@@ -165,7 +165,6 @@ hình sinh câu trả lời.
 \draw[arrow] (db) -- (rank);
 \draw[arrow] (rank) -- (llm);
 \draw[arrow] (llm) -- (ans);
-\draw[arrow] (db.south) to[out=-90,in=180] (rank.south);
 \end{tikzpicture}
 \caption{Kiến trúc tổng quát của một hệ thống RAG.}
 \label{fig:rag-general}
@@ -211,14 +210,14 @@ nhiều chiều, sao cho các chunk có ngữ nghĩa gần nhau nằm gần nhau
 \mathrm{sim}(\mathbf{u}, \mathbf{v}) = \frac{\mathbf{u}\cdot\mathbf{v}}{\lVert\mathbf{u}\rVert\,\lVert\mathbf{v}\rVert}.
 \end{equation}
 
-Vector database (vector database) lưu trữ và tìm kiếm láng giềng gần nhất trên hàng
+Vector database lưu trữ và tìm kiếm láng giềng gần nhất trên hàng
 triệu vector một cách hiệu quả nhờ các thuật toán chỉ mục xấp xỉ \cite{malkov2020hnsw}.
 Trong đề tài này, Qdrant \cite{qdrant2024} được sử dụng với khả năng lưu song
 song dense vector (dense) và sparse vector (sparse) trong cùng một collection.
 
 \subsection{Sparse retrieval, dense retrieval và hybrid retrieval}
 
-\emph{Sparse retrieval} (sparse retrieval) biểu diễn văn bản bằng sparse vector dựa trên tần
+\emph{Sparse retrieval} biểu diễn văn bản bằng sparse vector dựa trên tần
 suất từ, tiêu biểu là BM25 \cite{robertson2009bm25}. Điểm BM25 giữa câu truy vấn $q$ và
 tài liệu $d$ được tính:
 
@@ -231,10 +230,10 @@ trong đó $f(t,d)$ là tần suất từ $t$ trong $d$, $|d|$ là độ dài t�
 là độ dài trung bình, và $k_1$, $b$ là các tham số điều chỉnh. BM25 mạnh ở việc khớp từ
 khóa chính xác, đặc biệt với số hiệu văn bản, mã dịch vụ hoặc thuật ngữ hiếm.
 
-\emph{Dense retrieval} (dense retrieval) \cite{karpukhin2020dpr} sử dụng embedding model để
+\emph{Dense retrieval} \cite{karpukhin2020dpr} sử dụng embedding model để
 biểu diễn câu hỏi và tài liệu trong cùng không gian ngữ nghĩa, nhờ đó bắt được các trường
 hợp diễn đạt đồng nghĩa mà BM25 bỏ sót. Hai phương pháp có ưu nhược điểm bổ trợ cho nhau.
-\emph{Hybrid retrieval} (hybrid retrieval) kết hợp cả hai bằng cách lấy hợp hoặc kết hợp điểm
+\emph{Hybrid retrieval} kết hợp cả hai bằng cách lấy hợp hoặc kết hợp điểm
 số, thường cho kết quả tốt hơn từng phương pháp riêng lẻ.
 
 \subsection{Rerank}
@@ -357,7 +356,7 @@ quy trình nghiệp vụ ổn định) hoặc khi tri thức miền mang tính �
 ngữ cảnh retrieval. Ngược lại, khi tri thức thay đổi thường xuyên hoặc cần trích dẫn nguồn,
 \rag{} là lựa chọn phù hợp hơn.
 
-\section{So sánh RAG và fine-tuning, kiến trúc hybrid}
+\section{So sánh RAG và fine-tuning}
 \label{sec:hybrid}
 
 \rag{} và \ft{} giải quyết hai lớp vấn đề khác nhau và có thể bổ trợ cho nhau. Bảng
