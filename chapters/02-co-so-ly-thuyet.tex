@@ -102,7 +102,8 @@ Thông tin vị trí của token được bổ sung qua positional encoding.
 \subsection{Tokenization và biểu diễn từ}
 
 Trước khi đưa vào mô hình, văn bản được chia thành các \emph{token} bằng bộ tokenizer
-(thường theo thuật toán BPE hoặc SentencePiece). Mỗi token được ánh xạ thành một vector
+(thường theo thuật toán BPE \cite{sennrich2016bpe} hoặc SentencePiece). Mỗi token được ánh
+xạ thành một vector
 nhúng; các vector này được cập nhật qua nhiều lớp Transformer để tạo ra biểu diễn ngữ cảnh
 hóa. Chất lượng tokenizer ảnh hưởng trực tiếp đến khả năng xử lý tiếng Việt, đặc biệt với
 các từ ghép và dấu thanh.
@@ -113,11 +114,12 @@ Một mô hình ngôn ngữ lớn thường trải qua các giai đoạn:
 
 \begin{enumerate}
   \item \textbf{Tiền huấn luyện (pre-training):} huấn luyện mô hình dự đoán token tiếp theo
-  trên khối lượng văn bản khổng lồ. Giai đoạn này giúp mô hình học ngữ pháp, kiến thức phổ
+  trên khối lượng văn bản khổng lồ \cite{zhao2023survey}. Giai đoạn này giúp mô hình học
+  ngữ pháp, kiến thức phổ
   quát và khả năng suy luận ngôn ngữ.
   \item \textbf{Tinh chỉnh có giám sát (instruction tuning/SFT):} tiếp tục huấn luyện trên
   các cặp hướng dẫn -- đáp án để mô hình biết cách ``trả lời'' thay vì chỉ ``hoàn thành
-  văn bản''.
+  văn bản'' \cite{chung2022instruction}.
   \item \textbf{Căn chỉnh theo phản hồi con người (RLHF) hoặc tối ưu theo sở thích (DPO):}
   điều chỉnh mô hình theo sở thích của con người về tính hữu ích, trung thực và an toàn
   \cite{ouyang2022instructgpt,rafailov2023dpo}.
@@ -129,7 +131,8 @@ Khi suy luận, mô hình sinh token lần lượt theo một chiến lược gi
 (temperature) điều chỉnh độ ngẫu nhiên; top-$k$ và top-$p$ (nucleus sampling) giới hạn
 tập token được chọn, giúp cân bằng giữa tính đa dạng và tính ổn định. Chất lượng đầu ra
 phụ thuộc rất lớn vào \emph{nhắc lệnh} (prompt): kỹ thuật zero-shot, few-shot (đưa ví dụ)
-và chuỗi suy luận (Chain-of-Thought -- CoT) giúp định hướng mô hình giải quyết tác vụ.
+và chuỗi suy luận (Chain-of-Thought -- CoT) \cite{wei2022cot} giúp định hướng mô hình giải
+quyết tác vụ.
 
 \section{Sinh tăng cường truy hồi (RAG)}
 \label{sec:rag}
@@ -219,7 +222,8 @@ nhiều chiều, sao cho các đoạn có ngữ nghĩa gần nhau nằm gần nh
 \end{equation}
 
 Cơ sở dữ liệu vector (vector database) lưu trữ và tìm kiếm láng giềng gần nhất trên hàng
-triệu vector một cách hiệu quả. Trong đề tài này, Qdrant được sử dụng với khả năng lưu song
+triệu vector một cách hiệu quả nhờ các thuật toán chỉ mục xấp xỉ \cite{malkov2020hnsw}.
+Trong đề tài này, Qdrant \cite{qdrant2024} được sử dụng với khả năng lưu song
 song vector dày (dense) và vector thưa (sparse) trong cùng một collection.
 
 \subsection{Truy hồi thưa, truy hồi dày và truy hồi lai}
@@ -278,7 +282,7 @@ top-5) làm ngữ cảnh cho mô hình sinh.
 
 \subsection{Các biến thể của RAG}
 
-Từ kiến trúc cơ bản, \rag{} có nhiều biến thể. \emph{Naive RAG} là dạng đơn giản nhất với
+Từ kiến trúc cơ bản, \rag{} có nhiều biến thể \cite{gao2023ragsurvey}. \emph{Naive RAG} là dạng đơn giản nhất với
 truy hồi một lần. \emph{Advanced RAG} bổ sung tiền xử lý truy vấn, hậu xử lý kết quả và
 xếp hạng lại. \emph{Modular RAG} tổ chức thành các mô-đun linh hoạt có thể thay thế. Ngoài
 ra, \emph{GraphRAG} khai thác đồ thị tri thức để truy hồi theo quan hệ giữa các thực thể,
@@ -437,7 +441,7 @@ phản ánh tốt tính đúng đắn ngữ nghĩa trong hỏi đáp mở.
 
 \subsection{Phục vụ suy luận với vLLM}
 
-vLLM \cite{kwon2023vllm} là thư viện phục vụ suy luận LLM hiệu năng cao, nổi bật với cơ chế
+vLLM \cite{kwon2023vllm,vllm2024} là thư viện phục vụ suy luận LLM hiệu năng cao, nổi bật với cơ chế
 PagedAttention quản lý bộ nhớ KV-cache theo trang, cho phép tăng thông lượng đáng kể nhờ
 xử lý theo lô liên tục (continuous batching). Kết hợp với lượng tử hóa FP8, vLLM cho phép
 phục vụ các mô hình hàng chục tỷ tham số trên GPU với chi phí hợp lý.
@@ -450,16 +454,16 @@ lựa chọn phổ biến để phục vụ mô hình lớn trên hạ tầng gi
 
 \subsection{Giao thức MCP và A2A}
 
-\textbf{Model Context Protocol (MCP)} chuẩn hóa cách mô hình truy cập công cụ và nguồn dữ
-liệu, giúp tách biệt logic công cụ khỏi tác tử. \textbf{Agent-to-Agent (A2A)} chuẩn hóa
+\textbf{Model Context Protocol (MCP)} \cite{mcp2024} chuẩn hóa cách mô hình truy cập công cụ và nguồn dữ
+liệu, giúp tách biệt logic công cụ khỏi tác tử. \textbf{Agent-to-Agent (A2A)} \cite{a2a2024} chuẩn hóa
 giao tiếp giữa các tác tử, cho phép một tác tử điều phối gọi tác tử chuyên biệt và nhận
 kết quả. Hai giao thức này tạo nên nền tảng cho kiến trúc đa tác tử của đề tài.
 
 \subsection{Quan sát hệ thống và quản lý prompt}
 
-OpenTelemetry (OTel) cung cấp chuẩn thu thập vết (trace), chỉ số (metric) và log; dữ liệu
-được đẩy tới các nền tảng như Langfuse hoặc Grafana Tempo để giám sát luồng suy luận, độ
-trễ và lượng token. MLflow Prompt Registry cho phép quản lý phiên bản prompt tập trung, giúp
+OpenTelemetry (OTel) \cite{otel2024} cung cấp chuẩn thu thập vết (trace), chỉ số (metric) và log; dữ liệu
+được đẩy tới các nền tảng như Langfuse \cite{langfuse2024} hoặc Grafana Tempo để giám sát luồng suy luận, độ
+trễ và lượng token. MLflow Prompt Registry \cite{mlflow2024} cho phép quản lý phiên bản prompt tập trung, giúp
 tách cấu hình khỏi mã nguồn và kiểm soát thay đổi prompt theo môi trường (ví dụ nhãn
 \texttt{@production}).
 

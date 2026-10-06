@@ -1,2 +1,133 @@
-\chapter{Phu luc}
-Noi dung se duoc viet.
+% 99-phu-luc.tex — Phụ lục
+\chapter{Prompt hệ thống mẫu}
+\label{app:prompt}
+
+Phụ lục này trình bày các prompt hệ thống mẫu (đã lược giản) dùng cho tác tử điều phối và
+tác tử \rag. Prompt thực tế được quản lý tập trung qua MLflow Prompt Registry.
+
+\section*{A.1. Prompt tác tử điều phối (host)}
+\addcontentsline{toc}{section}{A.1. Prompt tác tử điều phối}
+
+\begin{lstlisting}
+Bạn là trợ lý ảo của Tổng công ty Bưu điện Việt Nam (VNPost).
+Nhiệm vụ: hiểu yêu cầu người dùng, duy trì ngữ cảnh hội thoại, và định
+tuyến đến tác tử chuyên biệt phù hợp.
+
+Các tác tử được phép gọi:
+- "Trợ lý tra cứu sản phẩm dịch vụ": câu hỏi về biểu phí, quy định,
+  chính sách bồi thường, thời gian toàn trình.
+- "Trợ lý định vị Bưu gửi": tra cứu tình trạng bưu gửi theo mã.
+- "Trợ lý tra cứu bưu cục": tra cứu thông tin/địa chỉ bưu cục.
+
+Nguyên tắc:
+1. Chỉ trả lời dựa trên thông tin từ tác tử chuyên biệt hoặc tài liệu.
+2. Nếu thiếu thông tin, thông báo rõ và đề nghị tạo ticket hỗ trợ.
+3. Không bịa số liệu, số hiệu văn bản hoặc chính sách.
+4. Khi nhận kết quả từ tác tử chuyên biệt, hợp nhất thành câu trả lời
+   mạch lạc, có trích dẫn nguồn khi có.
+\end{lstlisting}
+
+\section*{A.2. Prompt tác tử RAG}
+\addcontentsline{toc}{section}{A.2. Prompt tác tử RAG}
+
+\begin{lstlisting}
+Bạn là tác tử hỏi đáp trên tài liệu nội bộ của VNPost.
+
+Bạn được cung cấp:
+- Câu hỏi của người dùng.
+- Các đoạn ngữ cảnh truy hồi (kèm tiêu đề, số hiệu, đường dẫn tệp).
+- Lịch sử hội thoại gần đây.
+
+Nguyên tắc trả lời:
+1. Chỉ sử dụng thông tin trong ngữ cảnh truy hồi. Không dùng kiến thức
+   bên ngoài để suy diễn các con số nghiệp vụ.
+2. Nếu ngữ cảnh không đủ để trả lời, trả lời đúng mẫu:
+   "Tôi chưa tìm thấy thông tin này trong tài liệu nội bộ."
+3. Trích dẫn nguồn (tiêu đề/số hiệu văn bản) cho mỗi thông tin quan trọng.
+4. Trình bày ngắn gọn, đúng trọng tâm, dùng định dạng phù hợp (bảng nếu
+   là biểu phí).
+\end{lstlisting}
+
+\chapter{Bảng cấu hình tham số}
+\label{app:config}
+
+\begin{table}[htbp]
+\centering
+\caption{Cấu hình tham số tổng hợp của hệ thống.}
+\label{tab:app-config}
+\small
+\begin{tabular}{@{}p{6.4cm}p{8cm}@{}}
+\toprule
+\textbf{Tham số} & \textbf{Giá trị} \\
+\midrule
+Số chiều embedding & 4096 \\
+Độ dài đoạn tối đa & $\approx 1000$ ký tự \\
+Độ chồng lấn đoạn & bảo toàn ngữ cảnh liền kề \\
+Số ứng viên dense ($k_1^{dense}$) & 20 \\
+Số ứng viên BM25 ($k_1^{bm25}$) & 10--20 \\
+Số đoạn sau rerank ($k_2$) & 5--10 \\
+Ngưỡng điểm rerank & 0,0 \\
+Stemming tiếng Việt & tắt \\
+Danh sách từ dừng & loại bỏ \\
+Nhiệt độ sinh (temperature) & 0,7 \\
+Top-$p$ & 0,80 \\
+Top-$k$ (sampling) & 20 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\chapter{Danh mục mô hình và thành phần}
+\label{app:models}
+
+\begin{table}[htbp]
+\centering
+\caption{Các mô hình và thành phần chính được sử dụng.}
+\label{tab:app-models}
+\small
+\begin{tabular}{@{}p{5.2cm}p{9.2cm}@{}}
+\toprule
+\textbf{Thành phần} & \textbf{Mô hình / công nghệ} \\
+\midrule
+Mô hình sinh ngôn ngữ & \texttt{vietnampost-llm} (gateway); họ Qwen 27B--35B (FP8) \\
+Mô hình sinh thay thế & GPT-OSS-20B (FP8) \\
+Mô hình nhúng & Qwen3-Embedding-8B (4096 chiều) \\
+Mô hình xếp hạng lại & Qwen3-Reranker-8B (cross-encoder) \\
+Mô hình OCR & olmocr-2-7b / lightonocr2-1b \\
+Cơ sở dữ liệu vector & Qdrant v1.16.1 (dense COSINE + sparse IDF) \\
+Cơ sở dữ liệu nghiệp vụ & PostgreSQL \\
+Phục vụ suy luận & vLLM với PagedAttention và FP8 \\
+Quản lý prompt & MLflow Prompt Registry (\texttt{@production}) \\
+Quan sát & OpenTelemetry, Langfuse, Grafana Tempo \\
+Điều phối & Kubernetes, Docker Compose, Airflow \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\chapter{Mẫu hội thoại minh họa}
+\label{app:chat}
+
+\begin{lstlisting}
+[Người dùng] Cước EMS đi Nhật cho bưu gửi 500g là bao nhiêu?
+
+[Tác tử RAG] Theo biểu phí EMS hiện hành (trích Quyết định số ...), cước
+cho bưu gửi 500g đi Nhật Bản thuộc bậc ... với mức cước ... VND.
+Mức cước có thể thay đổi theo thời điểm và chính sách ưu đãi; vui lòng
+kiểm tra lại trước khi gửi.
+
+[Người dùng] Bưu gửi của tôi mã EG123456789VN đang ở đâu?
+
+[Tác tử định vị] Bưu gửi EG123456789VN đã đến bưu cục phát ... vào
+... . Trạng thái hiện tại: đang phát.
+
+[Người dùng] Gần 12 Nguyễn Trãi, Hà Nội có bưu cục nào?
+
+[Tác tử tra cứu bưu cục] Các bưu cục gần khu vực ... :
+1. Bưu cục ... - địa chỉ ... - giờ mở cửa ...
+2. Bưu cục ... - địa chỉ ... - giờ mở cửa ...
+\end{lstlisting}
+
+\begin{ghichu}
+Các ví dụ trong phụ lục đã được lược giản và thay thế số liệu bằng dấu ``...'' để tránh
+công bố thông tin nội bộ. Mẫu hội thoại nhằm minh họa luồng định tuyến và định dạng câu
+trả lời, không phải dữ liệu thật.
+\end{ghichu}
