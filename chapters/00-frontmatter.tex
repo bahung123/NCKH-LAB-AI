@@ -72,8 +72,8 @@ Về phương pháp, báo cáo khảo sát cơ sở lý thuyết về LLM, RAG v
 kiến trúc trợ lý ảo đa tác tử (multi-agent) gồm một agent điều phối và các agent
 chuyên biệt, giao tiếp qua các giao thức MCP và A2A; triển khai pipeline RAG lai
 (hybrid) kết hợp sparse retrieval BM25 và dense retrieval trên vector database Qdrant,
-kèm reranker; đồng thời đề xuất pipeline fine-tuning theo hướng tham số hiệu quả
-(LoRA/QLoRA). Toàn bộ mô hình được phục vụ cục bộ (on-premise) bằng vLLM để bảo đảm dữ
+kèm reranker; đồng thời đề xuất pipeline fine-tuning cho cả ba loại mô hình: LLM (LoRA/QLoRA),
+embedding model và reranker. Toàn bộ mô hình được phục vụ cục bộ (on-premise) bằng vLLM để bảo đảm dữ
 liệu nội bộ không rời khỏi hạ tầng của VNPost.
 
 Kết quả thực nghiệm trên tập tài liệu nội bộ (bộ mẫu 6 câu hỏi có đáp án tham chiếu) cho thấy

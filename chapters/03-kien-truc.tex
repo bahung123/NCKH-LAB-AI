@@ -179,46 +179,87 @@ khi không tìm thấy bằng chứng phù hợp, thay vì ``bịa'' câu trả 
 \label{sec:pipeline-ft}
 
 Vì codebase hiện tại của VNPost chưa có pipeline \ft, phần này trình bày \emph{thiết kế đề
-xuất}. Mục tiêu của \ft{} trong bối cảnh này không phải là nạp tri thức (đã do \rag{} đảm
-nhiệm) mà là điều chỉnh hành vi: phong cách trả lời, định dạng nghiệp vụ, cách xử lý các
-tình huống lặp và mức độ tuân thủ quy tắc.
+xuất}. Trong một hệ \rag, có \emph{ba loại mô hình} có thể được fine-tune với mục tiêu khác
+nhau: (i) \textbf{LLM} sinh câu trả lời -- điều chỉnh hành vi, phong cách và định dạng
+nghiệp vụ; (ii) \textbf{embedding model} -- cải thiện chất lượng biểu diễn để dense retrieval
+chính xác hơn; và (iii) \textbf{reranker} -- cải thiện xếp hạng để giữ đúng chunk trong
+top-$k$. Hai loại sau tác động trực tiếp vào khâu retrieval/rerank, vốn là điểm nghẽn được
+chỉ ra ở chương \ref{ch:ketqua}. Hiện tại, hệ thống đang dùng các mô hình embedding và
+reranker \emph{nguyên bản (pre-trained, off-the-shelf)}; việc fine-tune chúng là nội dung
+đề xuất của báo cáo.
 
 \subsection{Thu thập và chuẩn bị dữ liệu}
 
 Dữ liệu huấn luyện được tổng hợp từ ba nguồn: (i) log hội thoại thực tế giữa người dùng và
 hệ thống, sau khi lọc và ẩn thông tin định danh cá nhân (PII); (ii) các cặp hỏi -- đáp chuẩn
 do chuyên gia nghiệp vụ xây dựng; và (iii) dữ liệu tổng hợp do mô hình mạnh sinh ra có kiểm
-duyệt. Dữ liệu được định dạng theo mẫu hội thoại (instruction -- response) và chia thành
-tập huấn luyện, tập kiểm định và tập kiểm thử.
+duyệt. Tùy loại mô hình, dữ liệu được định dạng khác nhau:
 
-\subsection{Cấu hình LoRA/QLoRA}
+\begin{itemize}
+  \item \textbf{Với LLM:} định dạng theo mẫu hội thoại (instruction -- response).
+  \item \textbf{Với embedding và reranker:} định dạng theo cặp truy vấn -- chunk, trong đó
+  chunk chứa đáp án là mẫu dương (positive), còn các chunk được truy hồi nhưng không chứa
+  đáp án là mẫu âm (negative). Các mẫu âm \emph{khó} (hard negatives) được khai thác trực
+  tiếp từ kết quả truy hồi sai của BM25/dense, giúp mô hình học phân biệt tốt hơn.
+\end{itemize}
+
+Dữ liệu được chia thành tập huấn luyện, tập kiểm định và tập kiểm thử \emph{theo câu hỏi}
+để tránh rò rỉ dữ liệu giữa các tập.
+
+\subsection{Fine-tuning LLM (LoRA/QLoRA)}
 
 Đề xuất sử dụng LoRA hoặc QLoRA với hạng $r=16$, hệ số $\alpha=32$, dropout nhỏ, và áp dụng
 lên các ma trận chiếu trong khối attention và feed-forward (query, key, value, output,
 gate, up, down). Mô hình gốc được giữ ở định dạng quantization 4 bit khi dùng QLoRA để tiết
 kiệm bộ nhớ. Sau huấn luyện, adapter có thể được gộp (merge) vào mô hình gốc hoặc phục vụ
-như một adapter riêng trong vLLM.
+như một adapter riêng trong vLLM. Mục tiêu là điều chỉnh \emph{hành vi} chứ không nạp tri
+thức (tri thức do \rag{} đảm nhiệm).
+
+\subsection{Fine-tuning embedding model}
+
+Mục tiêu là tăng Recall@$k$ của dense retrieval bằng cách đưa các biểu diễn của câu hỏi và
+chunk chứa đáp án lại gần nhau hơn. Phương pháp đề xuất là \emph{học tương phản} (contrastive
+learning) với hàm mất mát xếp hạng nhiều mẫu âm (Multiple Negatives Ranking Loss): mỗi cặp
+truy vấn -- chunk dương được đối chiếu với các mẫu âm trong cùng batch (in-batch negatives)
+và các hard negatives. Mô hình nền là Qwen3-Embedding; có thể fine-tune toàn bộ hoặc chỉ
+tinh chỉnh lớp chiếu. Chỉ dẫn (instruction) chỉ áp dụng cho phía truy vấn, giữ nhất quán với
+lúc suy luận.
+
+Sau khi thay embedding model, cần \emph{đánh giá lại toàn bộ chỉ mục} (re-embed corpus) và đo
+lại Recall@$k$, MRR để xác nhận cải thiện trước khi đưa vào sản xuất.
+
+\subsection{Fine-tuning reranker}
+
+Reranker là cross-encoder nhận đồng thời (truy vấn, chunk) và cho điểm mức độ liên quan.
+Fine-tune reranker nhằm cải thiện Recall@$k$ sau rerank -- hiện chỉ đạt 50\% ở cấu hình sản
+xuất -- nên đây là hướng xử lý trực tiếp điểm nghẽn. Dữ liệu là các cặp (truy vấn, chunk)
+được gán nhãn liên quan theo đáp án tham chiếu (nhãn nhị phân hoặc theo mức), với hard
+negatives lấy từ top-$k$ sai. Huấn luyện bằng hàm mất mát phân loại nhị phân (cross-entropy)
+hoặc xếp hạng (margin/ranking loss). Mô hình nền là Qwen3-Reranker; có thể fine-tune toàn bộ
+hoặc dùng LoRA. Đánh giá bằng Recall@5, MRR và nDCG.
 
 \begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[
-  node distance=7mm,
-  proc/.style={draw=vnpostgreen,fill=boxblue,rounded corners,minimum width=3.8cm,minimum height=9mm,align=center,font=\small},
+  node distance=6mm,
+  proc/.style={draw=vnpostgreen,fill=boxblue,rounded corners,minimum width=3.4cm,minimum height=9mm,align=center,font=\small},
   arrow/.style={-{Latex[length=2mm]},thick,vnpostdark}
 ]
-\node[proc] (log) {Log hội thoại + cặp hỏi đáp chuẩn + dữ liệu tổng hợp};
-\node[proc,below=of log] (clean) {Làm sạch, ẩn PII, chuẩn hóa định dạng};
-\node[proc,below=of clean] (split) {Chia train / val / test};
-\node[proc,below=of split] (lora) {Huấn luyện LoRA/QLoRA (SFT)};
-\node[proc,below=of lora] (eval) {Đánh giá trên val (LLM-as-judge, RAGAS)};
-\node[proc,below=of eval] (serve) {Gộp/đóng gói adapter $\rightarrow$ phục vụ vLLM};
-\draw[arrow] (log) -- (clean);
-\draw[arrow] (clean) -- (split);
-\draw[arrow] (split) -- (lora);
-\draw[arrow] (lora) -- (eval);
-\draw[arrow] (eval) -- (serve);
+\node[proc,minimum width=7.4cm] (data) {Dữ liệu: log hội thoại, cặp hỏi--đáp, cặp (query, chunk)};
+\node[proc,minimum width=7.4cm,below=of data] (prep) {Làm sạch, ẩn PII, gán nhãn relevance, chia tập};
+\node[proc,below=13mm of prep] (emb) {Fine-tune embedding\\(contrastive)};
+\node[proc,left=5mm of emb] (llm) {Fine-tune LLM\\(LoRA/QLoRA)};
+\node[proc,right=5mm of emb] (rrk) {Fine-tune reranker\\(cross-encoder)};
+\node[proc,minimum width=7.4cm,below=26mm of emb] (eval) {Đánh giá: RAGAS, LLM-as-judge, Recall@$k$, MRR};
+\draw[arrow] (data) -- (prep);
+\draw[arrow] (prep) -- (emb);
+\draw[arrow] (prep) -- (llm);
+\draw[arrow] (prep) -- (rrk);
+\draw[arrow] (llm) -- (eval);
+\draw[arrow] (emb) -- (eval);
+\draw[arrow] (rrk) -- (eval);
 \end{tikzpicture}
-\caption{Pipeline fine-tuning đề xuất cho trợ lý ảo VNPost.}
+\caption{Pipeline fine-tuning đề xuất cho ba loại mô hình: LLM, embedding và reranker.}
 \label{fig:pipeline-ft}
 \end{figure}
 

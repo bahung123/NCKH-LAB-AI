@@ -127,12 +127,14 @@ khi thiếu thông tin.
 \section{Thiết kế fine-tuning}
 \label{sec:cai-dat-ft}
 
-Như đã nêu, đây là phần \emph{thiết kế đề xuất}. Bảng \ref{tab:lora} trình bày cấu hình
-LoRA/QLoRA đề xuất.
+Như đã nêu, đây là phần \emph{thiết kế đề xuất} cho cả ba loại mô hình. Bảng \ref{tab:lora}
+trình bày cấu hình LoRA/QLoRA cho LLM; bảng \ref{tab:emb-ft} cho embedding model; và bảng
+\ref{tab:rerank-ft} cho reranker. Hiện tại embedding model và reranker đang dùng nguyên bản;
+các cấu hình dưới đây là đề xuất để cải thiện khâu retrieval và rerank.
 
 \begin{table}[htbp]
 \centering
-\caption{Cấu hình LoRA/QLoRA đề xuất cho fine-tuning.}
+\caption{Cấu hình LoRA/QLoRA đề xuất cho fine-tuning LLM.}
 \label{tab:lora}
 \small
 \begin{tabular}{@{}p{6.4cm}p{8cm}@{}}
@@ -152,10 +154,55 @@ Chiến lược & SFT, có thể bổ sung DPO \\
 \end{tabular}
 \end{table}
 
-Dữ liệu huấn luyện dự kiến gồm log hội thoại đã ẩn PII, cặp hỏi -- đáp chuẩn do chuyên gia
-xây dựng, và dữ liệu tổng hợp có kiểm duyệt. Quy trình: làm sạch $\rightarrow$ định dạng
-$\rightarrow$ chia tập $\rightarrow$ huấn luyện SFT $\rightarrow$ đánh giá trên tập kiểm định
-$\rightarrow$ đóng gói adapter để phục vụ bằng vLLM.
+\begin{table}[htbp]
+\centering
+\caption{Cấu hình fine-tuning embedding model đề xuất.}
+\label{tab:emb-ft}
+\small
+\begin{tabular}{@{}p{6.4cm}p{8cm}@{}}
+\toprule
+\textbf{Tham số} & \textbf{Giá trị đề xuất} \\
+\midrule
+Mô hình nền & Qwen3-Embedding (4096 chiều) \\
+Phương pháp & Contrastive learning \\
+Hàm mất mát & Multiple Negatives Ranking Loss \\
+Mẫu âm & In-batch negatives + hard negatives (BM25/dense top-$k$ sai) \\
+Hạng $r$ (nếu dùng LoRA) & 16 \\
+Tốc độ học & $1\times10^{-5}$ đến $2\times10^{-5}$ \\
+Số epoch & 3--5 \\
+Độ dài tối đa & 512 token \\
+Chỉ dẫn (instruction) & Chỉ áp dụng cho truy vấn \\
+Đánh giá & Recall@$k$, MRR (phải re-embed toàn bộ corpus) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Cấu hình fine-tuning reranker đề xuất.}
+\label{tab:rerank-ft}
+\small
+\begin{tabular}{@{}p{6.4cm}p{8cm}@{}}
+\toprule
+\textbf{Tham số} & \textbf{Giá trị đề xuất} \\
+\midrule
+Mô hình nền & Qwen3-Reranker (cross-encoder) \\
+Đầu vào & Cặp (truy vấn, chunk) \\
+Nhãn & Liên quan / không liên quan theo đáp án tham chiếu \\
+Hàm mất mát & Cross-entropy (phân loại) hoặc margin/ranking loss \\
+Mẫu âm & Hard negatives từ top-$k$ sai \\
+Hạng $r$ (nếu dùng LoRA) & 16 \\
+Tốc độ học & $1\times10^{-5}$ đến $2\times10^{-5}$ \\
+Số epoch & 2--4 \\
+Đánh giá & Recall@5, MRR, nDCG (trước/sau) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Quy trình chung: làm sạch dữ liệu $\rightarrow$ định dạng theo loại mô hình $\rightarrow$ chia
+tập theo câu hỏi $\rightarrow$ huấn luyện $\rightarrow$ đánh giá trên tập kiểm định
+$\rightarrow$ đóng gói để phục vụ bằng vLLM. Lưu ý riêng cho embedding: sau khi thay mô hình
+phải \emph{re-embed toàn bộ corpus} và dựng lại chỉ mục Qdrant trước khi đo lại Recall@$k$.
 
 \section{Triển khai multi-agent}
 \label{sec:cai-dat-agent}
