@@ -5,35 +5,35 @@
 \section{Kết luận}
 
 Báo cáo đã nghiên cứu và triển khai thực nghiệm một trợ lý ảo thông minh cho Tổng công ty
-Bưu điện Việt Nam, dựa trên mô hình ngôn ngữ lớn kết hợp kỹ thuật sinh tăng cường truy hồi
-(\rag) và tinh chỉnh (\ft). Các kết quả chính bao gồm:
+Bưu điện Việt Nam, dựa trên mô hình ngôn ngữ lớn kết hợp kỹ thuật RAG
+(\rag) và fine-tuning (\ft). Các kết quả chính bao gồm:
 
 \begin{enumerate}
   \item \textbf{Hệ thống hóa cơ sở lý thuyết:} làm rõ kiến trúc Transformer, cơ chế của
-  \rag{} (chia đoạn, nhúng, truy hồi thưa/dày/lai, xếp hạng lại), các phương pháp \ft{}
+  \rag{} (chunking, embedding, sparse/dense/hybrid retrieval, rerank), các phương pháp \ft{}
   (SFT, LoRA/QLoRA, DPO), các thước đo đánh giá và nền tảng triển khai (vLLM, FP8, MCP, A2A,
-  OpenTelemetry, MLflow). Từ đó, báo cáo lập luận cho kiến trúc lai \rag{} + \ft.
-  \item \textbf{Thiết kế kiến trúc đa tác tử:} đề xuất kiến trúc gồm một tác tử điều phối và
-  các tác tử chuyên biệt giao tiếp qua A2A, truy cập công cụ qua MCP, phục vụ cục bộ nhằm
+  OpenTelemetry, MLflow). Từ đó, báo cáo lập luận cho kiến trúc hybrid \rag{} + \ft.
+  \item \textbf{Thiết kế kiến trúc multi-agent:} đề xuất kiến trúc gồm một agent điều phối và
+  các agent chuyên biệt giao tiếp qua A2A, truy cập công cụ qua MCP, phục vụ cục bộ nhằm
   bảo đảm dữ liệu nội bộ không rời hạ tầng tổ chức.
-  \item \textbf{Triển khai pipeline \rag{} lai:} cài đặt truy hồi thưa BM25 và truy hồi dày
-  trên Qdrant, kết hợp xếp hạng lại bằng cross-encoder, cùng quy trình tiền xử lý tài liệu
-  (OCR, Markdown hóa, metadata hóa, chia đoạn nhận biết cấu trúc).
+  \item \textbf{Triển khai pipeline \rag{} lai:} cài đặt sparse retrieval BM25 và dense retrieval
+  trên Qdrant, kết hợp rerank bằng cross-encoder, cùng quy trình tiền xử lý tài liệu
+  (OCR, Markdown hóa, metadata hóa, structure-aware chunking).
   \item \textbf{Đề xuất pipeline \ft:} thiết kế quy trình thu thập dữ liệu hội thoại, ẩn PII,
   huấn luyện LoRA/QLoRA và phục vụ adapter bằng vLLM, kèm tiêu chí quyết định khi nào dùng
   \rag, \ft{} hoặc kết hợp.
-  \item \textbf{Đánh giá định lượng:} trên bộ mẫu, truy hồi dày đạt Recall@20 = 100\% trong
-  khi cấu hình sản xuất sau xếp hạng lại đạt Recall@5 = 50\% và MRR = 0,3149; phân tích lỗi
-  cho thấy 50\% lỗi thuộc khâu xếp hạng lại và 0\% thuộc khâu truy hồi. Bộ đánh giá EMS gồm
+  \item \textbf{Đánh giá định lượng:} trên bộ mẫu, dense retrieval đạt Recall@20 = 100\% trong
+  khi cấu hình sản xuất sau rerank đạt Recall@5 = 50\% và MRR = 0,3149; phân tích lỗi
+  cho thấy 50\% lỗi thuộc khâu rerank và 0\% thuộc khâu retrieval. Bộ đánh giá EMS gồm
   99 câu đã được thu thập phản hồi đầy đủ (99/99 trong 249,4 giây).
   \item \textbf{Đánh giá hiệu năng và hiệu quả:} các mô hình cỡ 20--35 tỷ tham số với FP8
-  đạt thông lượng đơn 140--240 token/giây và thông lượng lô từ vài nghìn tới hơn 7.000
+  đạt throughput đơn 140--240 token/giây và throughput lô từ vài nghìn tới hơn 7.000
   token/giây; ước tính tiết kiệm khoảng 32,5 tỷ VNĐ/năm dựa trên giả định thận trọng về thời
   gian tiết kiệm.
 \end{enumerate}
 
 Tổng hợp lại, \rag{} là giải pháp phù hợp và khả thi cho nhu cầu tri thức động và trích
-nguồn của VNPost, \ft{} bổ trợ ở lớp hành vi và phong cách nghiệp vụ, và kiến trúc lai là
+nguồn của VNPost, \ft{} bổ trợ ở lớp hành vi và phong cách nghiệp vụ, và kiến trúc hybrid là
 đích đến dài hạn mang lại giá trị thực tiễn cao.
 
 \section{Hạn chế}
@@ -41,13 +41,13 @@ nguồn của VNPost, \ft{} bổ trợ ở lớp hành vi và phong cách nghi�
 Bên cạnh kết quả đạt được, đề tài còn một số hạn chế:
 
 \begin{itemize}
-  \item \textbf{Cỡ mẫu đánh giá truy hồi nhỏ:} kết quả định lượng chi tiết dựa trên 6 câu
+  \item \textbf{Cỡ mẫu đánh giá retrieval nhỏ:} kết quả định lượng chi tiết dựa trên 6 câu
   hỏi, chưa đủ đại diện cho toàn miền nghiệp vụ. Bộ 99 câu đã được thu thập phản hồi nhưng
   chưa tổng hợp đầy đủ các thước đo.
-  \item \textbf{Suy giảm recall ở khâu xếp hạng lại:} cấu hình hiện tại làm mất một phần
-  đoạn đúng ở top-$k$ nhỏ, cần cải tiến.
+  \item \textbf{Suy giảm recall ở khâu rerank:} cấu hình hiện tại làm mất một phần
+  chunk đúng ở top-$k$ nhỏ, cần cải tiến.
   \item \textbf{Chưa huấn luyện \ft{} thật:} phần \ft{} mới dừng ở thiết kế; chưa có bằng
-  chứng định lượng về hiệu quả của mô hình tinh chỉnh.
+  chứng định lượng về hiệu quả của mô hình fine-tuning.
   \item \textbf{Đánh giá chủ yếu dựa trên mô hình:} các thước đo RAGAS và LLM-as-judge có
   thể mang sai lệch của mô hình đánh giá; chưa có đánh giá diện rộng với người dùng cuối.
   \item \textbf{Phạm vi miền hẹp:} thực nghiệm tập trung vào bưu chính/EMS; tính khái quát
@@ -61,12 +61,12 @@ Trên cơ sở kết quả và hạn chế, đề tài đề xuất các hướn
 \begin{enumerate}
   \item \textbf{Mở rộng và chuẩn hóa đánh giá:} hoàn tất tổng hợp điểm RAGAS trên bộ 99 câu
   và mở rộng lên hàng trăm tới hàng nghìn câu; bổ sung đánh giá A/B với người dùng cuối.
-  \item \textbf{Cải tiến truy hồi và xếp hạng lại:} điều chỉnh $k_2$ và ngưỡng điểm; thử
-  nghiệm kết hợp điểm rerank với điểm truy hồi; huấn luyện hoặc tinh chỉnh reranker trên dữ
+  \item \textbf{Cải tiến retrieval và rerank:} điều chỉnh $k_2$ và ngưỡng điểm; thử
+  nghiệm kết hợp điểm rerank với điểm retrieval; huấn luyện hoặc fine-tuning reranker trên dữ
   liệu tiếng Việt miền bưu chính.
-  \item \textbf{Nâng cấp lên agentic RAG:} cho phép tác tử tự quyết định truy hồi nhiều vòng,
+  \item \textbf{Nâng cấp lên agentic RAG:} cho phép agent tự quyết định truy xuất nhiều vòng,
   cải viết truy vấn và gọi công cụ bổ trợ khi ngữ cảnh chưa đủ.
-  \item \textbf{Khai thác GraphRAG:} xây dựng đồ thị tri thức từ tài liệu để truy hồi theo
+  \item \textbf{Khai thác GraphRAG:} xây dựng đồ thị tri thức từ tài liệu để truy xuất theo
   quan hệ giữa các thực thể (dịch vụ, biểu phí, quy định, địa bàn), hỗ trợ câu hỏi phức tạp.
   \item \textbf{Triển khai \ft{} định kỳ:} khi đã tích lũy đủ log hội thoại chất lượng, tiến
   hành SFT/LoRA và đánh giá so với \rag{} thuần; xây dựng quy trình cập nhật định kỳ.

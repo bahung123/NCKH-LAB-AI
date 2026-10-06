@@ -6,7 +6,7 @@ Chương này trình bày việc triển khai hệ thống theo kiến trúc đ�
 \ref{ch:kientruc}. Mục \ref{sec:moitruong} mô tả môi trường và công cụ; mục
 \ref{sec:dulieu} mô tả dữ liệu; mục \ref{sec:cai-dat-rag} trình bày cấu hình \rag; mục
 \ref{sec:cai-dat-ft} trình bày thiết kế \ft; mục \ref{sec:cai-dat-agent} mô tả triển khai
-đa tác tử; mục \ref{sec:observability} trình bày hệ thống quan sát và quản lý prompt; và
+multi-agent; mục \ref{sec:observability} trình bày hệ thống quan sát và quản lý prompt; và
 mục \ref{sec:khokhan} tổng kết khó khăn cùng giải pháp.
 
 \section{Môi trường và công cụ}
@@ -24,12 +24,12 @@ Docker. Bảng \ref{tab:congcu} liệt kê các công cụ chính.
 \toprule
 \textbf{Thành phần} & \textbf{Vai trò} \\
 \midrule
-vLLM & Phục vụ suy luận LLM, embedding, reranker và OCR với FP8 \\
-Qdrant & Cơ sở dữ liệu vector, lưu vector dày và thưa \\
+vLLM & Phục vụ inference LLM, embedding, reranker và OCR với FP8 \\
+Qdrant & Vector database, lưu dense vector và sparse \\
 Kubernetes & Điều phối container, mở rộng và ổn định dịch vụ \\
 Docker Compose & Triển khai cục bộ phục vụ phát triển và thử nghiệm \\
 MLflow & Quản lý phiên bản prompt và gateway \\
-Langfuse / Grafana Tempo & Thu thập và trực quan hóa vết suy luận \\
+Langfuse / Grafana Tempo & Thu thập và trực quan hóa inference trace \\
 OpenTelemetry & Chuẩn thu thập trace, metric, log \\
 Airflow & Lập lịch thu thập và cập nhật dữ liệu định kỳ \\
 PostgreSQL & Lưu trữ dữ liệu nghiệp vụ (bưu cục, tracking) \\
@@ -70,36 +70,36 @@ trình, hàng hóa cấm gửi và chính sách bồi thường.
 
 Bộ đánh giá cho miền EMS gồm 99 cặp câu hỏi -- đáp án tham chiếu, được trích từ một bảng
 gồm hơn 400 dòng dữ liệu thô và lọc lại còn 99 cặp sử dụng được. Bộ này được dùng cho cả
-đánh giá truy hồi lẫn đánh giá sinh văn bản. Ngoài ra, một bộ mẫu nhỏ (6 câu hỏi) được dùng
-để đánh giá truy hồi chi tiết theo từng nhánh (BM25, dense) và một bộ mẫu 3 câu cho đánh
+đánh giá retrieval lẫn đánh giá sinh văn bản. Ngoài ra, một bộ mẫu nhỏ (6 câu hỏi) được dùng
+để đánh giá retrieval chi tiết theo từng nhánh (BM25, dense) và một bộ mẫu 3 câu cho đánh
 giá agent bằng LLM-as-judge.
 
 \subsection{Tiền xử lý}
 
 Quy trình tiền xử lý gồm: OCR cho bản scan; chuyển đổi sang Markdown; trích xuất metadata;
-chia đoạn nhận biết cấu trúc; và sinh file băm (hash) để theo dõi thay đổi tài liệu. Đối
-với tiếng Việt, cấu hình truy hồi thưa được điều chỉnh: tắt stemming và loại bỏ danh sách
+structure-aware chunking; và sinh file băm (hash) để theo dõi thay đổi tài liệu. Đối
+với tiếng Việt, cấu hình sparse retrieval được điều chỉnh: tắt stemming và loại bỏ danh sách
 từ dừng, vì stemming tiếng Việt kém hiệu quả với thuật ngữ chuyên ngành và số hiệu văn bản.
 
 \section{Cài đặt RAG}
 \label{sec:cai-dat-rag}
 
-\subsection{Chia đoạn và nhúng}
+\subsection{Chunking và embedding}
 
-Văn bản được chia thành các đoạn với độ dài tối đa khoảng 1000 ký tự và độ chồng lấn bảo
-toàn ngữ cảnh. Bộ chia đoạn ưu tiên ranh giới theo tiêu đề và giữ nguyên bảng. Mỗi đoạn
-được nhúng bằng mô hình Qwen3-Embedding với vector 4096 chiều; song song đó, vector thưa
+Văn bản được chia thành các chunk với độ dài tối đa khoảng 1000 ký tự và độ chồng lấn bảo
+toàn ngữ cảnh. Bộ chunking ưu tiên ranh giới theo tiêu đề và giữ nguyên bảng. Mỗi chunk
+được embedding bằng mô hình Qwen3-Embedding với vector 4096 chiều; song song đó, sparse vector
 cho BM25 được tạo với chỉ số IDF.
 
-\subsection{Cấu hình truy hồi}
+\subsection{Cấu hình retrieval}
 
-Bảng \ref{tab:rag-params} trình bày các tham số truy hồi chính. Ở nhánh sản phẩm -- dịch vụ
-của hệ thống đa tác tử, số ứng viên BM25 là 10 và số ứng viên sau xếp hạng lại là 10; ở
-cấu hình mẫu (template) dùng cho đánh giá truy hồi, các giá trị tương ứng là 20/20/5.
+Bảng \ref{tab:rag-params} trình bày các tham số retrieval chính. Ở nhánh sản phẩm -- dịch vụ
+của hệ thống multi-agent, số ứng viên BM25 là 10 và số ứng viên sau rerank là 10; ở
+cấu hình mẫu (template) dùng cho đánh giá retrieval, các giá trị tương ứng là 20/20/5.
 
 \begin{table}[htbp]
 \centering
-\caption{Cấu hình tham số truy hồi RAG.}
+\caption{Cấu hình tham số retrieval RAG.}
 \label{tab:rag-params}
 \small
 \begin{tabular}{@{}p{5.2cm}p{4.6cm}p{4.4cm}@{}}
@@ -108,20 +108,20 @@ cấu hình mẫu (template) dùng cho đánh giá truy hồi, các giá trị t
 \midrule
 Số ứng viên dense ($k_1^{dense}$) & 20 & 20 \\
 Số ứng viên BM25 ($k_1^{bm25}$) & 20 & 10 \\
-Số đoạn sau rerank ($k_2$) & 5 & 10 \\
+Số chunk sau rerank ($k_2$) & 5 & 10 \\
 Ngưỡng điểm rerank & 0,0 & 0,0 \\
 Số chiều embedding & 4096 & 4096 \\
-Độ dài đoạn tối đa & $\approx 1000$ & $\approx 1000$ \\
+Độ dài chunk tối đa & $\approx 1000$ & $\approx 1000$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\subsection{Nhúng câu hỏi và prompt}
+\subsection{Embedding câu hỏi và prompt}
 
-Câu hỏi được nhúng với chỉ dẫn (instruction) phù hợp cho truy hồi. Prompt hệ thống của tác
-tử \rag{} được quản lý tập trung qua MLflow Prompt Registry (ví dụ tham chiếu
+Câu hỏi được embedding với chỉ dẫn (instruction) phù hợp cho retrieval. Prompt hệ thống của agent
+\rag{} được quản lý tập trung qua MLflow Prompt Registry (ví dụ tham chiếu
 \texttt{prompts:/tct-rag-agent@production}), cho phép cập nhật mà không cần triển khai lại
-mã. Prompt quy định rõ: chỉ trả lời dựa trên ngữ cảnh truy hồi, trích nguồn, và từ chối
+mã. Prompt quy định rõ: chỉ trả lời dựa trên ngữ cảnh retrieval, trích nguồn, và từ chối
 khi thiếu thông tin.
 
 \section{Thiết kế fine-tuning}
@@ -157,28 +157,28 @@ xây dựng, và dữ liệu tổng hợp có kiểm duyệt. Quy trình: làm s
 $\rightarrow$ chia tập $\rightarrow$ huấn luyện SFT $\rightarrow$ đánh giá trên tập kiểm định
 $\rightarrow$ đóng gói adapter để phục vụ bằng vLLM.
 
-\section{Triển khai đa tác tử}
+\section{Triển khai multi-agent}
 \label{sec:cai-dat-agent}
 
-\subsection{Tác tử điều phối}
+\subsection{Agent điều phối}
 
-Tác tử điều phối (host) tiếp nhận yêu cầu, duy trì ngữ cảnh hội thoại và quyết định định
-tuyến. Prompt của host quy định danh sách tác tử được phép gọi, tiêu chí định tuyến và cơ
+Agent điều phối (host) tiếp nhận yêu cầu, duy trì ngữ cảnh hội thoại và quyết định định
+tuyến. Prompt của host quy định danh sách agent được phép gọi, tiêu chí định tuyến và cơ
 chế hợp nhất kết quả. Host cũng hỗ trợ tạo ticket khi cần chuyển sang hỗ trợ thủ công, với
 phân loại ticket theo nhóm nghiệp vụ (tư vấn, hỗ trợ ứng dụng, cước phí, đối soát thanh
 toán, hỗ trợ kỹ thuật).
 
-\subsection{Các tác tử chuyên biệt và công cụ}
+\subsection{Các agent chuyên biệt và công cụ}
 
-Các tác tử chuyên biệt giao tiếp qua A2A và truy cập công cụ qua MCP. Ví dụ, tác tử tra cứu
+Các agent chuyên biệt giao tiếp qua A2A và truy cập công cụ qua MCP. Ví dụ, agent tra cứu
 bưu gửi cung cấp công cụ tra cứu theo SOAP và theo API nội bộ, cùng công cụ phân tích điểm
-nghẽn (bottleneck). Tác tử tra cứu bưu cục truy vấn cơ sở dữ liệu PostgreSQL có tìm kiếm mờ
-(fuzzy search) để xử lý sai chính tả. Tác tử \rag{} sản phẩm -- dịch vụ dùng Qdrant và
+nghẽn (bottleneck). Agent tra cứu bưu cục truy vấn cơ sở dữ liệu PostgreSQL có tìm kiếm mờ
+(fuzzy search) để xử lý sai chính tả. Agent \rag{} sản phẩm -- dịch vụ dùng Qdrant và
 reranker như mô tả.
 
 \subsection{Quy tắc định tuyến}
 
-Với miền EMS, hệ thống sử dụng một bộ khoảng 26 quy tắc chuyển tác tử, được nhóm theo các
+Với miền EMS, hệ thống sử dụng một bộ khoảng 26 quy tắc chuyển agent, được nhóm theo các
 chủ đề: yêu cầu trực tiếp, khiếu nại/bồi thường, phản hồi, tác vụ vận hành, nghiệp vụ/hợp
 đồng, khách hàng VIP, an ninh/pháp lý, độ tin cậy thấp và chuyển cấp. Các quy tắc được lưu
 dưới dạng JSON có thể đọc bằng máy, bao gồm thông tin cần thu thập và chính sách theo giờ
@@ -187,14 +187,14 @@ hành chính, giúp việc định tuyến nhất quán và dễ bảo trì.
 \section{Hệ thống quan sát và quản lý prompt}
 \label{sec:observability}
 
-Mọi tác tử đều phát vết theo chuẩn OpenTelemetry tới một bộ thu (collector), sau đó phân
+Mọi agent đều phát vết theo chuẩn OpenTelemetry tới một bộ thu (collector), sau đó phân
 phối tới Grafana Tempo và Langfuse. Vết ghi lại luồng gọi công cụ, mô hình được dùng, lượng
-token, thời gian tới token đầu tiên và độ trễ tổng. Thông tin phiên và người dùng được
+token, thời gian tới token đầu tiên và latency tổng. Thông tin phiên và người dùng được
 truyền qua baggage để liên kết các vết trong cùng một hội thoại.
 
-Prompt được quản lý tập trung qua MLflow Prompt Registry. Mỗi tác tử tham chiếu một prompt
+Prompt được quản lý tập trung qua MLflow Prompt Registry. Mỗi agent tham chiếu một prompt
 theo tên và nhãn (ví dụ \texttt{@production}), nhờ đó có thể cập nhật prompt cho tất cả
-tác tử mà không cần sửa mã hay triển khai lại. Cơ chế này tách cấu hình khỏi logic và hỗ
+agent mà không cần sửa mã hay triển khai lại. Cơ chế này tách cấu hình khỏi logic và hỗ
 trợ kiểm soát thay đổi.
 
 \section{Khó khăn và giải pháp}
@@ -210,10 +210,10 @@ trợ kiểm soát thay đổi.
 \textbf{Khó khăn} & \textbf{Giải pháp} \\
 \midrule
 Stemming tiếng Việt kém hiệu quả & Tắt stemming, loại bỏ từ dừng trong BM25 \\
-Bảng biểu bị cắt vụn khi chia đoạn & Chia đoạn nhận biết cấu trúc, bảo toàn bảng \\
+Bảng biểu bị cắt vụn khi chunking & Chunking nhận biết cấu trúc, bảo toàn bảng \\
 Tài liệu scan chất lượng thấp & Tiền xử lý OCR bằng mô hình nhận dạng chuyên dụng \\
 Reranker làm giảm recall top-$k$ nhỏ & Phân tích lỗi, điều chỉnh $k$ và ngưỡng \\
-Chi phí GPU cho mô hình lớn & Lượng tử hóa FP8, phục vụ theo lô với vLLM \\
+Chi phí GPU cho mô hình lớn & Quantization FP8, phục vụ theo lô với vLLM \\
 Dữ liệu nhạy cảm & Chạy cục bộ, ẩn PII, RBAC theo vai trò \\
 Prompt phân tán, khó kiểm soát & MLflow Prompt Registry tập trung \\
 \bottomrule
@@ -222,5 +222,5 @@ Prompt phân tán, khó kiểm soát & MLflow Prompt Registry tập trung \\
 
 \section*{Kết chương}
 \addcontentsline{toc}{section}{Kết chương}
-Chương này đã mô tả môi trường, dữ liệu, cấu hình \rag, thiết kế \ft, triển khai đa tác tử
+Chương này đã mô tả môi trường, dữ liệu, cấu hình \rag, thiết kế \ft, triển khai multi-agent
 và hệ thống quan sát. Chương tiếp theo trình bày kết quả thực nghiệm và đánh giá.

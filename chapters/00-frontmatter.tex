@@ -1,120 +1,90 @@
-% 00-frontmatter.tex — Trang bìa, lời cảm ơn, tóm tắt, danh mục từ viết tắt
+% 00-frontmatter.tex — Trang bìa, lời nói đầu, tóm tắt điều hành, danh mục từ viết tắt
 
 % ===================== TRANG BÌA =====================
 \begin{titlepage}
 \centering
 \vspace*{0.6cm}
-{\large\bfseries [TÊN TRƯỜNG/ĐƠN VỊ]}\\[0.2cm]
-{\large [KHOA/BỘ MÔN]}\\[0.6cm]
-{\large\bfseries BÁO CÁO NGHIÊN CỨU KHOA HỌC}\\[1.4cm]
+{\large\bfseries [TÊN TỔNG CÔNG TY/ĐƠN VỊ]}\\[0.2cm]
+{\large [PHÒNG/BAN CHUYÊN MÔN]}\\[0.9cm]
+{\large\bfseries BÁO CÁO KỸ THUẬT -- ĐỀ XUẤT TRIỂN KHAI}\\[1.4cm]
 
 {\color{vnpostdark}\rule{\textwidth}{1pt}}\\[0.6cm]
 {\LARGE\bfseries Triển khai mô hình AI trong lĩnh vực\\[0.3cm] Chatbot/Trợ lý ảo}\\[0.8cm]
-{\large\itshape Ứng dụng kỹ thuật sinh tăng cường truy hồi (RAG) và tinh chỉnh\\[0.15cm]
-(fine-tuning) mô hình ngôn ngữ lớn nhằm trả lời thông minh, chính xác,\\[0.15cm]
+{\large\itshape Ứng dụng kỹ thuật Retrieval-Augmented Generation (RAG) và fine-tuning\\[0.15cm]
+mô hình ngôn ngữ lớn nhằm trả lời thông minh, chính xác,\\[0.15cm]
 ngữ cảnh hóa dựa trên tài liệu và dữ liệu nội bộ\\[0.15cm]
 của Tổng công ty Bưu điện Việt Nam}\\[0.6cm]
-{\color{vnpostdark}\rule{\textwidth}{1pt}}\\[1.6cm]
+{\color{vnpostdark}\rule{\textwidth}{1pt}}\\[1.4cm]
 
 \begin{tabular}{rl}
-\textbf{Nhóm sinh viên thực hiện:} & [HỌ VÀ TÊN TÁC GIẢ] \\[0.15cm]
-\textbf{Mã số sinh viên:} & [MSSV] \\[0.15cm]
-\textbf{Giảng viên hướng dẫn:} & [HỌ VÀ TÊN GVHD] \\[0.15cm]
-\textbf{Đơn vị phối hợp:} & Tổng công ty Bưu điện Việt Nam \\[0.15cm]
+\textbf{Kính gửi:} & Ban lãnh đạo Tổng công ty Bưu điện Việt Nam \\[0.15cm]
+\textbf{Đơn vị thực hiện:} & [PHÒNG/BAN/NHÓM THỰC HIỆN] \\[0.15cm]
+\textbf{Người trình bày:} & [HỌ VÀ TÊN] \\[0.15cm]
+\textbf{Chức danh:} & [CHỨC DANH] \\[0.15cm]
+\textbf{Ngày báo cáo:} & [NGÀY/THÁNG/NĂM] \\[0.15cm]
 \end{tabular}
 
 \vfill
 {\large\bfseries [NĂM]}
 \end{titlepage}
 
-% ===================== LỜI CẢM ƠN =====================
-\chapter*{Lời cảm ơn}
-\addcontentsline{toc}{chapter}{Lời cảm ơn}
-Em xin gửi lời cảm ơn chân thành tới [HỌ VÀ TÊN GVHD], người đã tận tình định hướng,
-góp ý và đồng hành cùng nhóm trong suốt quá trình nghiên cứu. Em cũng xin cảm ơn
-các anh chị kỹ sư tại Tổng công ty Bưu điện Việt Nam đã chia sẻ kiến thức nghiệp vụ,
-cung cấp bối cảnh bài toán và những phản hồi thực tiễn quý báu về hệ thống trợ lý ảo.
-Những kết quả trong báo cáo này một phần lớn dựa trên dữ liệu và hệ thống thử nghiệm
-nội bộ, mà nếu không có sự hỗ trợ đó thì đề tài khó có thể hoàn thành.
+% ===================== LỜI NÓI ĐẦU =====================
+\chapter*{Lời nói đầu}
+\addcontentsline{toc}{chapter}{Lời nói đầu}
+Trong bối cảnh chuyển đổi số của ngành bưu chính, việc ứng dụng trí tuệ nhân tạo vào
+công tác tra cứu, hỏi đáp và hỗ trợ nghiệp vụ là một hướng đi có tính thực tiễn cao.
+Báo cáo này trình bày kết quả nghiên cứu và đề xuất triển khai một trợ lý ảo thông minh
+dựa trên mô hình ngôn ngữ lớn (LLM) kết hợp kỹ thuật Retrieval-Augmented Generation (RAG)
+và fine-tuning, phục vụ nhu cầu trả lời chính xác, ngữ cảnh hóa dựa trên tài liệu nội bộ
+của Tổng công ty Bưu điện Việt Nam (VNPost).
 
-Do thời gian và năng lực còn hạn chế, báo cáo khó tránh khỏi thiếu sót. Em rất mong
-nhận được sự góp ý của thầy cô và các anh chị để đề tài được hoàn thiện hơn.
+Báo cáo được xây dựng trên cơ sở khảo sát hệ thống và dữ liệu thực tế đang vận hành, kết
+hợp phân tích lý thuyết và kết quả thực nghiệm. Các nội dung chính gồm: cơ sở lý thuyết về
+RAG và fine-tuning; kiến trúc hệ thống đa tác tử (multi-agent) đề xuất; kết quả triển khai
+thực nghiệm; đánh giá định lượng và định tính; cùng lộ trình và khuyến nghị triển khai.
+
+Nhóm thực hiện xin gửi lời cảm ơn tới Ban lãnh đạo và các đơn vị liên quan đã tạo điều kiện,
+chia sẻ bối cảnh nghiệp vụ và dữ liệu để hoàn thành báo cáo này.
 
 \vspace{1cm}
 \begin{flushright}
-\emph{Nhóm thực hiện}\\[0.5cm]
-[HỌ VÀ TÊN TÁC GIẢ]
+\emph{Đơn vị thực hiện}\\[0.5cm]
+[HỌ VÀ TÊN]
 \end{flushright}
 
-% ===================== TÓM TẮT =====================
-\chapter*{Tóm tắt}
-\addcontentsline{toc}{chapter}{Tóm tắt}
+% ===================== TÓM TẮT ĐIỀU HÀNH =====================
+\chapter*{Tóm tắt điều hành}
+\addcontentsline{toc}{chapter}{Tóm tắt điều hành}
 Trong bối cảnh chuyển đổi số của ngành bưu chính, Tổng công ty Bưu điện Việt Nam
 (VNPost) sở hữu một khối lượng lớn tài liệu nghiệp vụ nội bộ: quy trình, quyết định,
 biểu phí dịch vụ, quy định về hàng hóa và chính sách bồi thường, cùng các nghiệp vụ
 tra cứu bưu gửi và bưu cục. Việc tra cứu thủ công tốn nhiều thời gian, trong khi các
 kênh hỏi đáp truyền thống khó đáp ứng nhu cầu tra cứu tức thời, chính xác và có trích
 nguồn. Báo cáo này nghiên cứu việc triển khai một trợ lý ảo thông minh dựa trên mô
-hình ngôn ngữ lớn (LLM) kết hợp kỹ thuật sinh tăng cường truy hồi (Retrieval-Augmented
-Generation -- RAG) và tinh chỉnh (fine-tuning), hướng tới câu trả lời chính xác, ngữ
-cảnh hóa và bám sát tài liệu nội bộ.
+hình ngôn ngữ lớn (LLM) kết hợp kỹ thuật Retrieval-Augmented Generation (RAG) và
+fine-tuning, hướng tới câu trả lời chính xác, ngữ cảnh hóa và bám sát tài liệu nội bộ.
 
-Về phương pháp, đề tài khảo sát cơ sở lý thuyết về LLM, RAG và fine-tuning; thiết kế
-kiến trúc trợ lý ảo đa tác tử (multi-agent) gồm một tác tử điều phối và các tác tử
+Về phương pháp, báo cáo khảo sát cơ sở lý thuyết về LLM, RAG và fine-tuning; thiết kế
+kiến trúc trợ lý ảo đa tác tử (multi-agent) gồm một agent điều phối và các agent
 chuyên biệt, giao tiếp qua các giao thức MCP và A2A; triển khai pipeline RAG lai
-(hybrid) kết hợp truy hồi thưa BM25 và truy hồi dày (dense) trên cơ sở dữ liệu vector
-Qdrant, kèm mô hình xếp hạng lại (reranker); đồng thời đề xuất pipeline fine-tuning
-theo hướng tham số hiệu quả (LoRA/QLoRA). Toàn bộ mô hình được phục vụ cục bộ
-(on-premise) bằng vLLM để bảo đảm dữ liệu nội bộ không rời khỏi hạ tầng của VNPost.
+(hybrid) kết hợp sparse retrieval BM25 và dense retrieval trên vector database Qdrant,
+kèm reranker; đồng thời đề xuất pipeline fine-tuning theo hướng tham số hiệu quả
+(LoRA/QLoRA). Toàn bộ mô hình được phục vụ cục bộ (on-premise) bằng vLLM để bảo đảm dữ
+liệu nội bộ không rời khỏi hạ tầng của VNPost.
 
 Kết quả thực nghiệm trên các tập tài liệu nội bộ và bộ đánh giá gồm 99 câu hỏi cho thấy
-truy hồi dày đạt Recall@20 = 100\%, trong khi cấu hình sản xuất sau xếp hạng lại đạt
+dense retrieval đạt Recall@20 = 100\%, trong khi cấu hình sản xuất sau rerank đạt
 Recall@5 = 50\% và MRR = 0,3149; phân tích lỗi cho thấy nguyên nhân chính nằm ở khâu
-xếp hạng lại chứ không phải khâu truy hồi. Đề tài cũng trình bày kết quả đánh giá sinh
-văn bản bằng LLM-as-judge và bộ thước đo RAGAS, kết quả đo hiệu năng suy luận của vLLM,
-ước tính hiệu quả kinh tế -- xã hội, và đề xuất kiến trúc lai RAG + fine-tuning cùng
+rerank chứ không phải khâu retrieval. Báo cáo cũng trình bày kết quả đánh giá sinh văn
+bản bằng LLM-as-judge và bộ thước đo RAGAS, kết quả đo throughput suy luận của vLLM,
+ước tính hiệu quả kinh tế -- xã hội, và đề xuất kiến trúc hybrid RAG + fine-tuning cùng
 lộ trình phát triển. Kết quả cho thấy RAG là giải pháp phù hợp và khả thi cho tri thức
 động, còn fine-tuning bổ trợ cho phong cách và nghiệp vụ ổn định, và sự kết hợp của hai
 hướng tiếp cận mang lại giá trị thực tiễn cao cho \vnpost.
 
 \vspace{0.4cm}
-\noindent\textbf{Từ khóa:} trợ lý ảo, chatbot, mô hình ngôn ngữ lớn, RAG, fine-tuning,
-LoRA, truy hồi lai, reranker, multi-agent, VNPost.
-
-% ===================== ABSTRACT =====================
-\chapter*{Abstract}
-\addcontentsline{toc}{chapter}{Abstract}
-In the context of digital transformation in the postal sector, Vietnam Post (VNPost)
-holds a large corpus of internal business documents, including procedures, decisions,
-service tariffs, regulations on prohibited goods, and compensation policies, together
-with shipment-tracking and post-office look-up operations. Manual retrieval is
-time-consuming, and traditional support channels struggle to deliver instant, accurate,
-and source-grounded answers. This report studies the deployment of an intelligent
-virtual assistant based on large language models (LLMs) combined with
-Retrieval-Augmented Generation (RAG) and fine-tuning, aiming at accurate,
-context-aware, and document-grounded responses.
-
-Methodologically, we review the theory of LLMs, RAG, and fine-tuning; design a
-multi-agent assistant architecture with a host orchestrator and specialist agents
-communicating via the MCP and A2A protocols; implement a hybrid RAG pipeline combining
-sparse BM25 and dense retrieval over a Qdrant vector store with a cross-encoder
-reranker; and propose a parameter-efficient fine-tuning pipeline (LoRA/QLoRA). All
-models are served on-premise with vLLM so that internal data never leaves VNPost
-infrastructure.
-
-Experiments on internal corpora and a 99-question evaluation set show dense retrieval
-reaching Recall@20 = 100\%, while the production configuration after reranking reaches
-Recall@5 = 50\% with MRR = 0.3149; error analysis attributes the main loss to the
-reranking stage rather than retrieval. We further report LLM-as-judge and RAGAS-based
-generation evaluation, vLLM inference benchmarks, socio-economic impact estimates, and
-a hybrid RAG + fine-tuning architecture with a development roadmap. The results indicate
-that RAG is a suitable and feasible solution for dynamic knowledge, whereas fine-tuning
-complements it for stable style and domain behavior; their combination delivers high
-practical value for \vnpost.
-
-\vspace{0.4cm}
-\noindent\textbf{Keywords:} virtual assistant, chatbot, large language model, RAG,
-fine-tuning, LoRA, hybrid retrieval, reranker, multi-agent, Vietnam Post.
+\noindent\textbf{Từ khóa:} trợ lý ảo, chatbot, LLM, RAG, fine-tuning, LoRA, hybrid
+retrieval, reranker, multi-agent, VNPost.
 
 % ===================== DANH MỤC TỪ VIẾT TẮT =====================
 \chapter*{Danh mục từ viết tắt}
@@ -130,13 +100,13 @@ fine-tuning, LoRA, hybrid retrieval, reranker, multi-agent, Vietnam Post.
 \endhead
 \bottomrule
 \endfoot
-A2A & Agent-to-Agent protocol -- giao thức giao tiếp giữa các tác tử \\
+A2A & Agent-to-Agent protocol -- giao thức giao tiếp giữa các agent \\
 API & Application Programming Interface -- giao diện lập trình ứng dụng \\
-BM25 & Best Matching 25 -- hàm xếp hạng truy hồi thưa dựa trên xác suất \\
-CoT & Chain-of-Thought -- chuỗi suy luận trong nhắc lệnh \\
+BM25 & Best Matching 25 -- hàm xếp hạng sparse retrieval dựa trên xác suất \\
+CoT & Chain-of-Thought -- chuỗi suy luận trong prompt \\
 CSKH & Chăm sóc khách hàng \\
 DPO & Direct Preference Optimization -- tối ưu hóa theo sở thích trực tiếp \\
-DPR & Dense Passage Retrieval -- truy hồi đoạn văn dày \\
+DPR & Dense Passage Retrieval -- dense retrieval đoạn văn \\
 EMS & Express Mail Service -- dịch vụ chuyển phát nhanh \\
 FP8 & Định dạng số thực dấu phẩy động 8 bit \\
 GPU & Graphics Processing Unit -- đơn vị xử lý đồ họa \\
@@ -149,15 +119,15 @@ MRR & Mean Reciprocal Rank -- nghịch đảo thứ hạng trung bình \\
 nDCG & normalized Discounted Cumulative Gain \\
 OCR & Optical Character Recognition -- nhận dạng ký tự quang học \\
 OTel & OpenTelemetry -- chuẩn quan sát hệ thống \\
-PEFT & Parameter-Efficient Fine-Tuning -- tinh chỉnh hiệu quả tham số \\
+PEFT & Parameter-Efficient Fine-Tuning -- fine-tuning hiệu quả tham số \\
 PII & Personally Identifiable Information -- thông tin định danh cá nhân \\
-QLoRA & Quantized LoRA -- LoRA trên mô hình lượng tử hóa \\
-Qdrant & Cơ sở dữ liệu vector mã nguồn mở \\
+QLoRA & Quantized LoRA -- LoRA trên mô hình lượng tử hóa (quantization) \\
+Qdrant & Vector database mã nguồn mở \\
 RAG & Retrieval-Augmented Generation -- sinh tăng cường truy hồi \\
 RAGAS & Framework đánh giá RAG tự động \\
 RBAC & Role-Based Access Control -- kiểm soát truy cập theo vai trò \\
 RLHF & Reinforcement Learning from Human Feedback \\
-SFT & Supervised Fine-Tuning -- tinh chỉnh có giám sát \\
+SFT & Supervised Fine-Tuning -- fine-tuning có giám sát \\
 SSO & Single Sign-On -- đăng nhập một lần \\
 VNPost & Tổng công ty Bưu điện Việt Nam \\
 vLLM & Thư viện phục vụ suy luận LLM hiệu năng cao \\

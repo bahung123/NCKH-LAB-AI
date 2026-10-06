@@ -5,8 +5,8 @@
 Chương này hệ thống hóa các kiến thức nền tảng cần thiết cho đề tài. Trước hết, mục
 \ref{sec:chatbot} giới thiệu khái niệm chatbot và trợ lý ảo. Mục \ref{sec:llm} trình bày
 mô hình ngôn ngữ lớn và kiến trúc Transformer. Mục \ref{sec:rag} và mục \ref{sec:ft} lần
-lượt đi sâu vào hai kỹ thuật trọng tâm là sinh tăng cường truy hồi (\rag) và tinh chỉnh
-(\ft). Mục \ref{sec:hybrid} so sánh hai hướng tiếp cận và đề xuất kiến trúc lai. Mục
+lượt đi sâu vào hai kỹ thuật trọng tâm là RAG (\rag) và fine-tuning
+(\ft). Mục \ref{sec:hybrid} so sánh hai hướng tiếp cận và đề xuất kiến trúc hybrid. Mục
 \ref{sec:metrics} trình bày các thước đo đánh giá, và mục \ref{sec:infra} giới thiệu các
 nền tảng triển khai thực tế.
 
@@ -40,11 +40,11 @@ thành phần: (i) bộ hiểu ngôn ngữ và quản lý hội thoại; (ii) b�
 bộ gọi công cụ (tool calling); (iv) bộ sinh câu trả lời; và (v) lớp quan sát, ghi log để
 giám sát chất lượng.
 
-Trong các hệ thống lớn, kiến trúc \emph{đa tác tử} (multi-agent) ngày càng phổ biến: một
-tác tử điều phối (orchestrator/host) tiếp nhận yêu cầu người dùng và định tuyến đến các
-tác tử chuyên biệt (specialist agents), mỗi tác tử phụ trách một miền nghiệp vụ hẹp. Cách
+Trong các hệ thống lớn, kiến trúc \emph{multi-agent} (multi-agent) ngày càng phổ biến: một
+agent điều phối (orchestrator/host) tiếp nhận yêu cầu người dùng và định tuyến đến các
+agent chuyên biệt (specialist agents), mỗi agent phụ trách một miền nghiệp vụ hẹp. Cách
 tổ chức này giúp hệ thống dễ mở rộng, dễ kiểm thử và giảm tải nhận thức cho từng thành
-phần. Để các tác tử có thể giao tiếp và chia sẻ công cụ một cách chuẩn hóa, các giao thức
+phần. Để các agent có thể giao tiếp và chia sẻ công cụ một cách chuẩn hóa, các giao thức
 như Model Context Protocol (MCP) và Agent-to-Agent (A2A) được sử dụng (trình bày ở mục
 \ref{sec:infra}).
 
@@ -104,7 +104,7 @@ Thông tin vị trí của token được bổ sung qua positional encoding.
 Trước khi đưa vào mô hình, văn bản được chia thành các \emph{token} bằng bộ tokenizer
 (thường theo thuật toán BPE \cite{sennrich2016bpe} hoặc SentencePiece). Mỗi token được ánh
 xạ thành một vector
-nhúng; các vector này được cập nhật qua nhiều lớp Transformer để tạo ra biểu diễn ngữ cảnh
+embedding; các vector này được cập nhật qua nhiều lớp Transformer để tạo ra biểu diễn ngữ cảnh
 hóa. Chất lượng tokenizer ảnh hưởng trực tiếp đến khả năng xử lý tiếng Việt, đặc biệt với
 các từ ghép và dấu thanh.
 
@@ -116,8 +116,8 @@ Một mô hình ngôn ngữ lớn thường trải qua các giai đoạn:
   \item \textbf{Tiền huấn luyện (pre-training):} huấn luyện mô hình dự đoán token tiếp theo
   trên khối lượng văn bản khổng lồ \cite{zhao2023survey}. Giai đoạn này giúp mô hình học
   ngữ pháp, kiến thức phổ
-  quát và khả năng suy luận ngôn ngữ.
-  \item \textbf{Tinh chỉnh có giám sát (instruction tuning/SFT):} tiếp tục huấn luyện trên
+  quát và khả năng lập luận ngôn ngữ.
+  \item \textbf{Fine-tuning có giám sát (instruction tuning/SFT):} tiếp tục huấn luyện trên
   các cặp hướng dẫn -- đáp án để mô hình biết cách ``trả lời'' thay vì chỉ ``hoàn thành
   văn bản'' \cite{chung2022instruction}.
   \item \textbf{Căn chỉnh theo phản hồi con người (RLHF) hoặc tối ưu theo sở thích (DPO):}
@@ -125,34 +125,33 @@ Một mô hình ngôn ngữ lớn thường trải qua các giai đoạn:
   \cite{ouyang2022instructgpt,rafailov2023dpo}.
 \end{enumerate}
 
-\subsection{Sinh văn bản và nhắc lệnh}
+\subsection{Sinh văn bản và prompt}
 
-Khi suy luận, mô hình sinh token lần lượt theo một chiến lược giải mã. Nhiệt độ
+Khi inference, mô hình sinh token lần lượt theo một chiến lược giải mã. Nhiệt độ
 (temperature) điều chỉnh độ ngẫu nhiên; top-$k$ và top-$p$ (nucleus sampling) giới hạn
 tập token được chọn, giúp cân bằng giữa tính đa dạng và tính ổn định. Chất lượng đầu ra
-phụ thuộc rất lớn vào \emph{nhắc lệnh} (prompt): kỹ thuật zero-shot, few-shot (đưa ví dụ)
-và chuỗi suy luận (Chain-of-Thought -- CoT) \cite{wei2022cot} giúp định hướng mô hình giải
+phụ thuộc rất lớn vào \emph{prompt}: kỹ thuật zero-shot, few-shot (đưa ví dụ)
+và Chain-of-Thought (CoT) (Chain-of-Thought -- CoT) \cite{wei2022cot} giúp định hướng mô hình giải
 quyết tác vụ.
 
-\section{Sinh tăng cường truy hồi (RAG)}
+\section{RAG (Retrieval-Augmented Generation)}
 \label{sec:rag}
 
 \subsection{Khái niệm và động lực}
 
-Sinh tăng cường truy hồi \cite{lewis2020rag} là kỹ thuật kết hợp một bộ truy hồi
-(retriever) với một mô hình sinh (generator). Thay vì buộc mô hình phải ``nhớ'' toàn bộ
-tri thức trong tham số, \rag{} truy hồi các đoạn tài liệu liên quan từ kho tri thức ngoài
-tại thời điểm suy luận, rồi cung cấp chúng làm ngữ cảnh để mô hình sinh câu trả lời. Cách
+RAG \cite{lewis2020rag} là kỹ thuật kết hợp một retriever với một mô hình sinh (generator). Thay vì buộc mô hình phải ``nhớ'' toàn bộ
+tri thức trong tham số, \rag{} lấy các document chunk liên quan từ kho tri thức ngoài
+tại thời điểm inference, rồi cung cấp chúng làm ngữ cảnh để mô hình sinh câu trả lời. Cách
 tiếp cận này mang lại ba lợi ích chính: (i) cập nhật tri thức mà không cần huấn luyện lại;
-(ii) giảm hiện tượng ảo giác nhờ ràng buộc vào bằng chứng; và (iii) cho phép trích dẫn
+(ii) giảm hiện tượng hallucination nhờ ràng buộc vào bằng chứng; và (iii) cho phép trích dẫn
 nguồn, tăng tính kiểm chứng.
 
 \subsection{Kiến trúc tổng quát}
 
-Một hệ \rag{} điển hình gồm hai pha: \emph{lập chỉ mục} (indexing) và \emph{suy luận}
-(inference). Ở pha lập chỉ mục, tài liệu được chuẩn hóa, chia đoạn, nhúng thành vector và
-lưu vào cơ sở dữ liệu vector. Ở pha suy luận, câu hỏi của người dùng được nhúng, bộ truy
-hồi tìm các đoạn liên quan, chúng được xếp hạng lại và ghép thành ngữ cảnh, cuối cùng mô
+Một hệ \rag{} điển hình gồm hai pha: \emph{indexing} và \emph{inference}.
+Ở pha indexing, tài liệu được chuẩn hóa, chia thành chunk, embedding thành vector và
+lưu vào vector database. Ở pha inference, câu hỏi của người dùng được embedding, retriever
+tìm các chunk liên quan, chúng được rerank và ghép thành ngữ cảnh, cuối cùng mô
 hình sinh câu trả lời.
 
 \begin{figure}[htbp]
@@ -164,9 +163,9 @@ hình sinh câu trả lời.
   arrow/.style={-{Latex[length=2mm]},thick,vnpostdark}
 ]
 \node[proc] (q) {Câu hỏi};
-\node[proc,right=of q] (ret) {Bộ truy hồi\\thưa + dày};
+\node[proc,right=of q] (ret) {Retriever\\sparse + dense};
 \node[data,right=of ret] (db) {Kho tri thức\\vector};
-\node[proc,right=of db] (rank) {Xếp hạng lại};
+\node[proc,right=of db] (rank) {Rerank};
 \node[proc,right=of rank] (llm) {LLM sinh\\câu trả lời};
 \node[proc,below=10mm of llm] (ans) {Câu trả lời\\có trích nguồn};
 \draw[arrow] (q) -- (ret);
@@ -180,15 +179,14 @@ hình sinh câu trả lời.
 \label{fig:rag-general}
 \end{figure}
 
-\subsection{Chia đoạn và tiền xử lý tài liệu}
+\subsection{Chunking và tiền xử lý tài liệu}
 
-Chất lượng của \rag{} phụ thuộc trước hết vào cách tài liệu được chia thành các \emph{đoạn}
-(chunk). Đoạn quá lớn làm loãng ngữ cảnh và tăng chi phí; đoạn quá nhỏ làm mất mạch thông
-tin. Với tài liệu nghiệp vụ chứa nhiều bảng biểu và tiêu đề, chiến lược chia đoạn thường
+Chất lượng của \rag{} phụ thuộc trước hết vào cách tài liệu được chia thành các \emph{chunk}.
+Chunk quá lớn làm loãng ngữ cảnh và tăng chi phí; chunk quá nhỏ làm mất mạch thông
+tin. Với tài liệu nghiệp vụ chứa nhiều bảng biểu và tiêu đề, chiến lược chunking thường
 dùng là \emph{nhận biết cấu trúc} (header-aware): cắt theo tiêu đề mục, giữ nguyên bảng,
-đặt độ dài tối đa và độ chồng lấn (overlap) hợp lý để bảo toàn ngữ cảnh giữa các đoạn liền
-kề. Với tài liệu scan hoặc ảnh, cần bước nhận dạng ký tự quang học (OCR) trước khi chia
-đoạn.
+đặt độ dài tối đa và độ chồng lấn (overlap) hợp lý để bảo toàn ngữ cảnh giữa các chunk liền
+kề. Với tài liệu scan hoặc ảnh, cần bước nhận dạng ký tự quang học (OCR) trước khi chunking.
 
 \begin{figure}[htbp]
 \centering
@@ -199,36 +197,36 @@ kề. Với tài liệu scan hoặc ảnh, cần bước nhận dạng ký tự 
 ]
 \node[proc] (doc) {Tài liệu\\gốc};
 \node[proc,right=of doc] (ocr) {OCR /\\chuẩn hóa};
-\node[proc,right=of ocr] (chunk) {Chia đoạn\\+ metadata};
-\node[proc,right=of chunk] (emb) {Nhúng\\vector};
+\node[proc,right=of ocr] (chunk) {Chunking\\+ metadata};
+\node[proc,right=of chunk] (emb) {Embedding\\vector};
 \node[proc,right=of emb] (store) {Lưu vào\\Qdrant};
 \draw[arrow] (doc) -- (ocr);
 \draw[arrow] (ocr) -- (chunk);
 \draw[arrow] (chunk) -- (emb);
 \draw[arrow] (emb) -- (store);
 \end{tikzpicture}
-\caption{Pipeline lập chỉ mục tài liệu trong hệ thống RAG.}
+\caption{Pipeline indexing tài liệu trong hệ thống RAG.}
 \label{fig:rag-index}
 \end{figure}
 
-\subsection{Nhúng vector và cơ sở dữ liệu vector}
+\subsection{Embedding vector và vector database}
 
-Mô hình nhúng (embedding) ánh xạ đoạn văn bản thành một vector số thực trong không gian
-nhiều chiều, sao cho các đoạn có ngữ nghĩa gần nhau nằm gần nhau. Độ tương đồng thường được
+Mô hình embedding ánh xạ text chunk thành một vector số thực trong không gian
+nhiều chiều, sao cho các chunk có ngữ nghĩa gần nhau nằm gần nhau. Độ tương đồng thường được
 đo bằng cosine:
 
 \begin{equation}
 \mathrm{sim}(\mathbf{u}, \mathbf{v}) = \frac{\mathbf{u}\cdot\mathbf{v}}{\lVert\mathbf{u}\rVert\,\lVert\mathbf{v}\rVert}.
 \end{equation}
 
-Cơ sở dữ liệu vector (vector database) lưu trữ và tìm kiếm láng giềng gần nhất trên hàng
+Vector database (vector database) lưu trữ và tìm kiếm láng giềng gần nhất trên hàng
 triệu vector một cách hiệu quả nhờ các thuật toán chỉ mục xấp xỉ \cite{malkov2020hnsw}.
 Trong đề tài này, Qdrant \cite{qdrant2024} được sử dụng với khả năng lưu song
-song vector dày (dense) và vector thưa (sparse) trong cùng một collection.
+song dense vector (dense) và sparse vector (sparse) trong cùng một collection.
 
-\subsection{Truy hồi thưa, truy hồi dày và truy hồi lai}
+\subsection{Sparse retrieval, dense retrieval và hybrid retrieval}
 
-\emph{Truy hồi thưa} (sparse retrieval) biểu diễn văn bản bằng vector thưa dựa trên tần
+\emph{Sparse retrieval} (sparse retrieval) biểu diễn văn bản bằng sparse vector dựa trên tần
 suất từ, tiêu biểu là BM25 \cite{robertson2009bm25}. Điểm BM25 giữa câu truy vấn $q$ và
 tài liệu $d$ được tính:
 
@@ -241,19 +239,19 @@ trong đó $f(t,d)$ là tần suất từ $t$ trong $d$, $|d|$ là độ dài t�
 là độ dài trung bình, và $k_1$, $b$ là các tham số điều chỉnh. BM25 mạnh ở việc khớp từ
 khóa chính xác, đặc biệt với số hiệu văn bản, mã dịch vụ hoặc thuật ngữ hiếm.
 
-\emph{Truy hồi dày} (dense retrieval) \cite{karpukhin2020dpr} sử dụng mô hình nhúng để
+\emph{Dense retrieval} (dense retrieval) \cite{karpukhin2020dpr} sử dụng embedding model để
 biểu diễn câu hỏi và tài liệu trong cùng không gian ngữ nghĩa, nhờ đó bắt được các trường
 hợp diễn đạt đồng nghĩa mà BM25 bỏ sót. Hai phương pháp có ưu nhược điểm bổ trợ cho nhau.
-\emph{Truy hồi lai} (hybrid retrieval) kết hợp cả hai bằng cách lấy hợp hoặc kết hợp điểm
+\emph{Hybrid retrieval} (hybrid retrieval) kết hợp cả hai bằng cách lấy hợp hoặc kết hợp điểm
 số, thường cho kết quả tốt hơn từng phương pháp riêng lẻ.
 
-\subsection{Xếp hạng lại}
+\subsection{Rerank}
 
-Các bộ truy hồi giai đoạn đầu (first-stage retrieval) thường nhanh nhưng kém chính xác do
-phải quét trên toàn kho. Bộ \emph{xếp hạng lại} (reranker) tinh chỉnh thứ tự ứng viên bằng
-một mô hình mạnh hơn -- thường là mô hình cross-encoder đọc đồng thời câu hỏi và đoạn văn
+Các retriever giai đoạn đầu (first-stage retrieval) thường nhanh nhưng kém chính xác do
+phải quét trên toàn kho. Bộ \emph{reranker} sắp xếp lại thứ tự ứng viên bằng
+một mô hình mạnh hơn -- thường là mô hình cross-encoder đọc đồng thời câu hỏi và chunk
 để cho điểm tương quan. Quy trình điển hình: lấy một tập ứng viên lớn ở giai đoạn một (ví
-dụ top-20 mỗi nhánh), hợp chúng lại, rồi xếp hạng lại toàn bộ và giữ top-$k$ nhỏ (ví dụ
+dụ top-20 mỗi nhánh), hợp chúng lại, rồi rerank toàn bộ và giữ top-$k$ nhỏ (ví dụ
 top-5) làm ngữ cảnh cho mô hình sinh.
 
 \begin{figure}[htbp]
@@ -264,10 +262,10 @@ top-5) làm ngữ cảnh cho mô hình sinh.
   arrow/.style={-{Latex[length=2mm]},thick,vnpostdark}
 ]
 \node[proc] (q) {Câu hỏi};
-\node[proc,above right=8mm and 14mm of q] (bm) {Truy hồi thưa\\BM25 (top-20)};
-\node[proc,below right=8mm and 14mm of q] (de) {Truy hồi dày\\(top-20)};
+\node[proc,above right=8mm and 14mm of q] (bm) {Sparse retrieval\\BM25 (top-20)};
+\node[proc,below right=8mm and 14mm of q] (de) {Dense retrieval\\(top-20)};
 \node[proc,right=32mm of q] (union) {Hợp ứng viên};
-\node[proc,right=of union] (rr) {Xếp hạng lại\\cross-encoder};
+\node[proc,right=of union] (rr) {Rerank\\cross-encoder};
 \node[proc,right=of rr] (topk) {Top-$k$ ngữ cảnh};
 \draw[arrow] (q) -- (bm);
 \draw[arrow] (q) -- (de);
@@ -276,40 +274,40 @@ top-5) làm ngữ cảnh cho mô hình sinh.
 \draw[arrow] (union) -- (rr);
 \draw[arrow] (rr) -- (topk);
 \end{tikzpicture}
-\caption{Pipeline truy hồi lai kết hợp BM25, truy hồi dày và xếp hạng lại.}
+\caption{Pipeline hybrid retrieval kết hợp BM25, dense retrieval và rerank.}
 \label{fig:rag-hybrid}
 \end{figure}
 
 \subsection{Các biến thể của RAG}
 
 Từ kiến trúc cơ bản, \rag{} có nhiều biến thể \cite{gao2023ragsurvey}. \emph{Naive RAG} là dạng đơn giản nhất với
-truy hồi một lần. \emph{Advanced RAG} bổ sung tiền xử lý truy vấn, hậu xử lý kết quả và
-xếp hạng lại. \emph{Modular RAG} tổ chức thành các mô-đun linh hoạt có thể thay thế. Ngoài
-ra, \emph{GraphRAG} khai thác đồ thị tri thức để truy hồi theo quan hệ giữa các thực thể,
-và \emph{agentic RAG} cho phép tác tử quyết định truy hồi nhiều vòng, cải viết truy vấn
-hoặc gọi công cụ khác khi cần. Đề tài này áp dụng advanced/modular RAG với truy hồi lai và
-xếp hạng lại, đồng thời định hướng mở rộng lên agentic và GraphRAG trong tương lai.
+truy xuất một lần. \emph{Advanced RAG} bổ sung tiền xử lý truy vấn, hậu xử lý kết quả và
+rerank. \emph{Modular RAG} tổ chức thành các mô-đun linh hoạt có thể thay thế. Ngoài
+ra, \emph{GraphRAG} khai thác đồ thị tri thức để truy xuất theo quan hệ giữa các thực thể,
+và \emph{agentic RAG} cho phép agent quyết định truy xuất nhiều vòng, cải viết truy vấn
+hoặc gọi công cụ khác khi cần. Đề tài này áp dụng advanced/modular RAG với hybrid retrieval và
+rerank, đồng thời định hướng mở rộng lên agentic và GraphRAG trong tương lai.
 
-\section{Tinh chỉnh mô hình ngôn ngữ lớn (Fine-tuning)}
+\section{Fine-tuning mô hình ngôn ngữ lớn (Fine-tuning)}
 \label{sec:ft}
 
 \subsection{Khái niệm và các mức độ}
 
-Tinh chỉnh (\ft) là quá trình tiếp tục huấn luyện một mô hình đã được tiền huấn luyện trên
-một tập dữ liệu chuyên biệt, nhằm điều chỉnh mô hình phù hợp với miền hoặc tác vụ cụ thể.
+Fine-tuning (\ft) là quá trình tiếp tục huấn luyện một mô hình đã được tiền huấn luyện trên
+một dataset chuyên biệt, nhằm điều chỉnh mô hình phù hợp với miền hoặc tác vụ cụ thể.
 Có thể chia thành hai nhóm:
 
 \begin{itemize}
-  \item \textbf{Tinh chỉnh toàn bộ (full fine-tuning):} cập nhật toàn bộ tham số mô hình.
+  \item \textbf{Full fine-tuning:} cập nhật toàn bộ tham số mô hình.
   Hiệu quả cao nhưng đòi hỏi tài nguyên tính toán và bộ nhớ rất lớn, đồng thời cần lưu
   toàn bộ bản sao mô hình cho mỗi tác vụ.
-  \item \textbf{Tinh chỉnh hiệu quả tham số (PEFT):} chỉ cập nhật một phần nhỏ tham số,
+  \item \textbf{Fine-tuning hiệu quả tham số (PEFT):} chỉ cập nhật một phần nhỏ tham số,
   giữ nguyên phần lớn mô hình gốc. Tiêu biểu là LoRA và QLoRA.
 \end{itemize}
 
-\subsection{Tinh chỉnh có giám sát và căn chỉnh}
+\subsection{Fine-tuning có giám sát và căn chỉnh}
 
-\emph{Tinh chỉnh có giám sát} (Supervised Fine-Tuning -- SFT) huấn luyện mô hình trên các
+\emph{Fine-tuning có giám sát} (Supervised Fine-Tuning -- SFT) huấn luyện mô hình trên các
 cặp hướng dẫn -- đáp án chất lượng cao. Để mô hình trả lời đúng ``giọng'' nghiệp vụ, dữ
 liệu SFT cần được thiết kế cẩn thận cả về nội dung lẫn định dạng. Sau SFT, có thể áp dụng
 RLHF hoặc DPO \cite{rafailov2023dpo} để căn chỉnh theo sở thích con người, giúp câu trả
@@ -355,19 +353,19 @@ xuống $r(d+k)$, thường chỉ còn dưới 1\% tổng tham số. Hệ số $
 
 \subsection{QLoRA}
 
-QLoRA \cite{dettmers2023qlora} mở rộng LoRA bằng cách lượng tử hóa mô hình gốc xuống 4 bit
-(định dạng NF4), áp dụng lượng tử hóa kép (double quantization) và tối ưu hóa phân trang
-(paged optimizers). Nhờ đó có thể tinh chỉnh các mô hình lớn trên phần cứng khiêm tốn hơn
+QLoRA \cite{dettmers2023qlora} mở rộng LoRA bằng cách quantization mô hình gốc xuống 4 bit
+(định dạng NF4), áp dụng quantization kép (double quantization) và tối ưu hóa phân trang
+(paged optimizers). Nhờ đó có thể fine-tuning các mô hình lớn trên phần cứng khiêm tốn hơn
 đáng kể so với full fine-tuning, với mức suy giảm chất lượng nhỏ.
 
 \subsection{Khi nào nên dùng fine-tuning}
 
 Fine-tuning phù hợp khi cần điều chỉnh \emph{hành vi} của mô hình (phong cách, định dạng,
 quy trình nghiệp vụ ổn định) hoặc khi tri thức miền mang tính ổn định và khó mô tả bằng
-ngữ cảnh truy hồi. Ngược lại, khi tri thức thay đổi thường xuyên hoặc cần trích dẫn nguồn,
+ngữ cảnh retrieval. Ngược lại, khi tri thức thay đổi thường xuyên hoặc cần trích dẫn nguồn,
 \rag{} là lựa chọn phù hợp hơn.
 
-\section{So sánh RAG và fine-tuning, kiến trúc lai}
+\section{So sánh RAG và fine-tuning, kiến trúc hybrid}
 \label{sec:hybrid}
 
 \rag{} và \ft{} giải quyết hai lớp vấn đề khác nhau và có thể bổ trợ cho nhau. Bảng
@@ -382,38 +380,38 @@ ngữ cảnh truy hồi. Ngược lại, khi tri thức thay đổi thường xu
 \toprule
 \textbf{Tiêu chí} & \textbf{RAG} & \textbf{Fine-tuning} \\
 \midrule
-Nguồn tri thức & Kho tài liệu ngoài, truy hồi động & Tham số mô hình, cố định sau huấn luyện \\
+Nguồn tri thức & Kho tài liệu ngoài, truy xuất động & Tham số mô hình, cố định sau huấn luyện \\
 Cập nhật tri thức & Chỉ cần cập nhật chỉ mục & Cần huấn luyện lại \\
-Khả năng trích nguồn & Có (dựa trên đoạn truy hồi) & Hạn chế \\
-Chi phí huấn luyện & Thấp (chủ yếu lập chỉ mục) & Cao hơn (SFT/LoRA) \\
-Chi phí suy luận & Cao hơn (thêm truy hồi) & Thấp hơn (chỉ sinh) \\
+Khả năng trích nguồn & Có (dựa trên chunk retrieval) & Hạn chế \\
+Chi phí huấn luyện & Thấp (chủ yếu indexing) & Cao hơn (SFT/LoRA) \\
+Chi phí inference & Cao hơn (thêm retrieval) & Thấp hơn (chỉ sinh) \\
 Điều chỉnh phong cách/định dạng & Yếu & Mạnh \\
-Giảm ảo giác & Tốt nếu truy hồi đúng & Trung bình \\
+Giảm hallucination & Tốt nếu truy xuất đúng & Trung bình \\
 Phù hợp nhất với & Tri thức động, tra cứu & Hành vi miền ổn định \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Từ so sánh trên, đề tài đề xuất \emph{kiến trúc lai} kết hợp cả hai: sử dụng \rag{} làm
-kênh cung cấp tri thức động và bằng chứng, đồng thời dùng mô hình đã tinh chỉnh để sinh
+Từ so sánh trên, đề tài đề xuất \emph{kiến trúc hybrid} kết hợp cả hai: sử dụng \rag{} làm
+kênh cung cấp tri thức động và bằng chứng, đồng thời dùng mô hình đã fine-tuning để sinh
 câu trả lời đúng phong cách, đúng định dạng nghiệp vụ và xử lý các tình huống ổn định.
-Một bộ định tuyến (router) quyết định khi nào chỉ cần \rag, khi nào dùng mô hình tinh chỉnh,
+Một router quyết định khi nào chỉ cần \rag, khi nào dùng mô hình fine-tuning,
 và khi nào kết hợp. Chi tiết kiến trúc được trình bày ở chương \ref{ch:kientruc}.
 
 \section{Các thước đo đánh giá}
 \label{sec:metrics}
 
-Đánh giá một hệ \rag{} cần tách thành hai khâu: chất lượng truy hồi và chất lượng sinh.
+Đánh giá một hệ \rag{} cần tách thành hai khâu: chất lượng retrieval và chất lượng sinh.
 
-\subsection{Thước đo truy hồi}
+\subsection{Thước đo retrieval}
 
 \begin{itemize}
-  \item \textbf{Recall@$k$:} tỉ lệ các tài liệu/đoạn liên quan được tìm thấy trong top-$k$.
+  \item \textbf{Recall@$k$:} tỉ lệ các tài liệu/chunk liên quan được tìm thấy trong top-$k$.
   Đây là thước đo quan trọng nhất vì nếu tài liệu đúng không nằm trong ngữ cảnh thì mô hình
   không thể trả lời đúng.
-  \item \textbf{Precision@$k$:} tỉ lệ đoạn liên quan trong top-$k$.
-  \item \textbf{MRR (Mean Reciprocal Rank):} nghịch đảo thứ hạng của đoạn liên quan đầu tiên,
-  trung bình trên các truy vấn. MRR cao nghĩa là đoạn đúng xuất hiện sớm.
+  \item \textbf{Precision@$k$:} tỉ lệ chunk liên quan trong top-$k$.
+  \item \textbf{MRR (Mean Reciprocal Rank):} nghịch đảo thứ hạng của chunk liên quan đầu tiên,
+  trung bình trên các truy vấn. MRR cao nghĩa là chunk đúng xuất hiện sớm.
   \item \textbf{nDCG:} thước đo có trọng số theo vị trí, phù hợp khi đánh giá chất lượng
   xếp hạng với mức độ liên quan khác nhau.
 \end{itemize}
@@ -424,10 +422,10 @@ Bộ thước đo RAGAS \cite{es2023ragas} đánh giá hệ \rag{} không cần 
 
 \begin{itemize}
   \item \textbf{Faithfulness (độ trung thực):} mức độ câu trả lời được hỗ trợ bởi ngữ cảnh
-  truy hồi, phản ánh mức độ ảo giác.
+  retrieval, phản ánh mức độ hallucination.
   \item \textbf{Answer Relevancy (độ liên quan câu trả lời):} mức độ câu trả lời đúng trọng
   tâm câu hỏi.
-  \item \textbf{Context Precision:} tỉ lệ đoạn ngữ cảnh thực sự hữu ích.
+  \item \textbf{Context Precision:} tỉ lệ context chunk thực sự hữu ích.
   \item \textbf{Context Recall:} mức độ ngữ cảnh bao phủ đáp án tham chiếu.
 \end{itemize}
 
@@ -439,14 +437,14 @@ phản ánh tốt tính đúng đắn ngữ nghĩa trong hỏi đáp mở.
 \section{Nền tảng triển khai}
 \label{sec:infra}
 
-\subsection{Phục vụ suy luận với vLLM}
+\subsection{Phục vụ inference với vLLM}
 
-vLLM \cite{kwon2023vllm,vllm2024} là thư viện phục vụ suy luận LLM hiệu năng cao, nổi bật với cơ chế
-PagedAttention quản lý bộ nhớ KV-cache theo trang, cho phép tăng thông lượng đáng kể nhờ
-xử lý theo lô liên tục (continuous batching). Kết hợp với lượng tử hóa FP8, vLLM cho phép
+vLLM \cite{kwon2023vllm,vllm2024} là thư viện LLM serving LLM hiệu năng cao, nổi bật với cơ chế
+PagedAttention quản lý bộ nhớ KV-cache theo trang, cho phép tăng throughput đáng kể nhờ
+xử lý theo lô liên tục (continuous batching). Kết hợp với quantization FP8, vLLM cho phép
 phục vụ các mô hình hàng chục tỷ tham số trên GPU với chi phí hợp lý.
 
-\subsection{Lượng tử hóa FP8}
+\subsection{Quantization FP8}
 
 FP8 là định dạng số dấu phẩy động 8 bit, giảm một nửa dung lượng bộ nhớ so với FP16 và
 tăng tốc tính toán trên phần cứng hỗ trợ, với mức suy giảm chất lượng thường nhỏ. Đây là
@@ -455,15 +453,15 @@ lựa chọn phổ biến để phục vụ mô hình lớn trên hạ tầng gi
 \subsection{Giao thức MCP và A2A}
 
 \textbf{Model Context Protocol (MCP)} \cite{mcp2024} chuẩn hóa cách mô hình truy cập công cụ và nguồn dữ
-liệu, giúp tách biệt logic công cụ khỏi tác tử. \textbf{Agent-to-Agent (A2A)} \cite{a2a2024} chuẩn hóa
-giao tiếp giữa các tác tử, cho phép một tác tử điều phối gọi tác tử chuyên biệt và nhận
-kết quả. Hai giao thức này tạo nên nền tảng cho kiến trúc đa tác tử của đề tài.
+liệu, giúp tách biệt logic công cụ khỏi agent. \textbf{Agent-to-Agent (A2A)} \cite{a2a2024} chuẩn hóa
+giao tiếp giữa các agent, cho phép một agent điều phối gọi agent chuyên biệt và nhận
+kết quả. Hai giao thức này tạo nên nền tảng cho kiến trúc multi-agent của đề tài.
 
 \subsection{Quan sát hệ thống và quản lý prompt}
 
 OpenTelemetry (OTel) \cite{otel2024} cung cấp chuẩn thu thập vết (trace), chỉ số (metric) và log; dữ liệu
-được đẩy tới các nền tảng như Langfuse \cite{langfuse2024} hoặc Grafana Tempo để giám sát luồng suy luận, độ
-trễ và lượng token. MLflow Prompt Registry \cite{mlflow2024} cho phép quản lý phiên bản prompt tập trung, giúp
+được đẩy tới các nền tảng như Langfuse \cite{langfuse2024} hoặc Grafana Tempo để giám sát inference flow, latency
+và lượng token. MLflow Prompt Registry \cite{mlflow2024} cho phép quản lý phiên bản prompt tập trung, giúp
 tách cấu hình khỏi mã nguồn và kiểm soát thay đổi prompt theo môi trường (ví dụ nhãn
 \texttt{@production}).
 

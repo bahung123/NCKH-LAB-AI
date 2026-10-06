@@ -23,21 +23,21 @@ phần nhu cầu: FAQ cứng nhắc và nhanh lỗi thời, còn tổng đài ph
 viên và thời gian làm việc. Hệ quả là trải nghiệm khách hàng bị ảnh hưởng và chi phí
 vận hành tăng lên.
 
-Sự phát triển của các mô hình ngôn ngữ lớn (Large Language Model -- LLM) mở ra một
+Sự phát triển của các LLM (Large Language Model) mở ra một
 hướng giải quyết mới. Với khả năng hiểu ngôn ngữ tự nhiên và sinh văn bản mạch lạc,
 LLM có thể đóng vai trò lõi của một trợ lý ảo có khả năng hội thoại tự nhiên. Tuy
 nhiên, bản thân một LLM tổng quát không thể trả lời chính xác về tài liệu nội bộ của
 một tổ chức cụ thể: nó không được huấn luyện trên dữ liệu đó, dễ sinh thông tin sai
-lệch (hiện tượng ``ảo giác''), và không thể trích dẫn nguồn để người dùng kiểm chứng.
+lệch (hiện tượng ``hallucination''), và không thể trích dẫn nguồn để người dùng kiểm chứng.
 Hai hướng tiếp cận chính được cộng đồng nghiên cứu và công nghiệp áp dụng để khắc phục
 hạn chế này là:
 
 \begin{itemize}
-  \item \textbf{Sinh tăng cường truy hồi (Retrieval-Augmented Generation -- \rag):}
-  tách tri thức ra khỏi tham số mô hình, truy hồi các đoạn tài liệu liên quan từ một
-  kho tri thức bên ngoài tại thời điểm suy luận, rồi đưa chúng vào ngữ cảnh để mô hình
+  \item \textbf{RAG (Retrieval-Augmented Generation -- \rag):}
+  tách tri thức ra khỏi tham số mô hình, lấy các document chunk liên quan từ một
+  kho tri thức bên ngoài tại thời điểm inference, rồi đưa chúng vào ngữ cảnh để mô hình
   sinh câu trả lời có căn cứ và có thể trích nguồn.
-  \item \textbf{Tinh chỉnh (\ft):} tiếp tục huấn luyện mô hình trên dữ liệu chuyên ngành
+  \item \textbf{Fine-tuning (\ft):} tiếp tục huấn luyện mô hình trên dữ liệu chuyên ngành
   để điều chỉnh hành vi, phong cách và kiến thức miền, giúp mô hình trả lời đúng ``giọng''
   nghiệp vụ và định dạng mong muốn.
 \end{itemize}
@@ -57,15 +57,15 @@ bộ, vận hành an toàn trên hạ tầng riêng và có thể mở rộng th
 \begin{enumerate}
   \item Hệ thống hóa cơ sở lý thuyết về chatbot/trợ lý ảo, mô hình ngôn ngữ lớn, kỹ thuật
   \rag{} và kỹ thuật \ft, làm rõ ưu nhược điểm và phạm vi áp dụng của từng hướng tiếp cận.
-  \item Thiết kế một kiến trúc trợ lý ảo đa tác tử (multi-agent) phù hợp với đặc thù dữ
-  liệu và nghiệp vụ của VNPost, trong đó các tác tử chuyên biệt đảm nhận các miền nghiệp
+  \item Thiết kế một kiến trúc trợ lý ảo multi-agent phù hợp với đặc thù dữ
+  liệu và nghiệp vụ của VNPost, trong đó các agent chuyên biệt đảm nhận các miền nghiệp
   vụ khác nhau và giao tiếp qua các giao thức chuẩn hóa.
-  \item Triển khai và thực nghiệm một pipeline \rag{} lai kết hợp truy hồi thưa BM25 và
-  truy hồi dày trên cơ sở dữ liệu vector, có bước xếp hạng lại, nhằm tạo câu trả lời bám
+  \item Triển khai và thực nghiệm một pipeline \rag{} lai kết hợp sparse retrieval BM25 và
+  dense retrieval trên vector database, có bước rerank, nhằm tạo câu trả lời bám
   sát tài liệu.
   \item Đề xuất và mô tả một pipeline \ft{} theo hướng tham số hiệu quả (LoRA/QLoRA), cùng
-  tiêu chí quyết định khi nào nên dùng \rag, khi nào nên dùng mô hình đã tinh chỉnh, và
-  cách kết hợp hai hướng tiếp cận trong một kiến trúc lai.
+  tiêu chí quyết định khi nào nên dùng \rag, khi nào nên dùng mô hình đã fine-tuning, và
+  cách kết hợp hai hướng tiếp cận trong một kiến trúc hybrid.
   \item Đánh giá hệ thống bằng các thước đo định lượng (Recall@k, MRR, các thước đo RAGAS,
   đánh giá bởi mô hình ngôn ngữ) và định tính (case study hội thoại), từ đó rút ra bài học
   triển khai và đề xuất lộ trình phát triển.
@@ -77,8 +77,8 @@ bộ, vận hành an toàn trên hạ tầng riêng và có thể mở rộng th
 
 Đối tượng nghiên cứu của đề tài là các phương pháp và kiến trúc triển khai trợ lý ảo dựa
 trên mô hình ngôn ngữ lớn cho miền nghiệp vụ bưu chính, cụ thể là kỹ thuật \rag{} và kỹ
-thuật \ft, cùng các thành phần hỗ trợ như nhúng (embedding), cơ sở dữ liệu vector, xếp
-hạng lại và hạ tầng phục vụ mô hình.
+thuật \ft, cùng các thành phần hỗ trợ như embedding, vector database, rerank
+và hạ tầng phục vụ mô hình.
 
 \subsection{Phạm vi nghiên cứu}
 
@@ -106,15 +106,15 @@ các mô hình thương mại qua API đám mây, nhằm bảo đảm yêu cầu
 \begin{enumerate}
   \item \textbf{Nghiên cứu tài liệu:} khảo sát các công trình khoa học và tài liệu kỹ thuật
   về Transformer, \rag, fine-tuning, LoRA/QLoRA, các thước đo đánh giá và hạ tầng phục vụ
-  suy luận, nhằm xây dựng nền tảng lý thuyết và lựa chọn công nghệ.
+  inference, nhằm xây dựng nền tảng lý thuyết và lựa chọn công nghệ.
   \item \textbf{Phân tích và thiết kế hệ thống:} phân tích yêu cầu nghiệp vụ của VNPost,
-  từ đó thiết kế kiến trúc đa tác tử, pipeline \rag{} và pipeline \ft{} cùng kiến trúc lai.
+  từ đó thiết kế kiến trúc multi-agent, pipeline \rag{} và pipeline \ft{} cùng kiến trúc hybrid.
   \item \textbf{Thực nghiệm:} triển khai hệ thống thử nghiệm, xây dựng các pipeline xử lý
-  dữ liệu -- từ nhận dạng ký tự quang học (OCR), chuẩn hóa tài liệu, chia đoạn, nhúng
-  vector, đến truy hồi lai và xếp hạng lại; tiến hành đo đạc trên dữ liệu nội bộ.
-  \item \textbf{Đánh giá định lượng:} sử dụng các thước đo truy hồi (Recall@k, MRR), các
+  dữ liệu -- từ nhận dạng ký tự quang học (OCR), chuẩn hóa tài liệu, chunking, embedding
+  vector, đến hybrid retrieval và rerank; tiến hành đo đạc trên dữ liệu nội bộ.
+  \item \textbf{Đánh giá định lượng:} sử dụng các thước đo retrieval (Recall@k, MRR), các
   thước đo sinh văn bản (bộ thước đo RAGAS) và đánh giá bởi mô hình ngôn ngữ (LLM-as-judge);
-  đo hiệu năng suy luận của hệ thống phục vụ.
+  đo hiệu năng inference của hệ thống phục vụ.
   \item \textbf{Đánh giá định tính:} phân tích các tình huống hội thoại thực tế, đánh giá
   mức độ hữu ích của câu trả lời và tính khả thi khi triển khai ở quy mô lớn.
   \item \textbf{Ước lượng hiệu quả:} ước tính lợi ích kinh tế -- xã hội dựa trên thời gian
@@ -128,14 +128,14 @@ Các đóng góp chính của đề tài bao gồm:
 \begin{itemize}
   \item \textbf{Về lý thuyết:} cung cấp một bức tranh tổng hợp, có hệ thống về \rag{} và
   \ft{} trong bối cảnh triển khai trợ lý ảo doanh nghiệp, đặc biệt nhấn mạnh sự đánh đổi
-  giữa tri thức động và hành vi miền, làm cơ sở cho kiến trúc lai.
-  \item \textbf{Về kiến trúc:} đề xuất một kiến trúc trợ lý ảo đa tác tử kết hợp \rag{} lai
+  giữa tri thức động và hành vi miền, làm cơ sở cho kiến trúc hybrid.
+  \item \textbf{Về kiến trúc:} đề xuất một kiến trúc trợ lý ảo multi-agent kết hợp \rag{} lai
   và \ft{} cho miền bưu chính, có khả năng mở rộng và bảo đảm dữ liệu nội bộ không rời khỏi
   hạ tầng tổ chức.
   \item \textbf{Về thực nghiệm:} triển khai và đo đạc trên dữ liệu và nghiệp vụ thực tế của
-  VNPost, cung cấp bằng chứng định lượng về hiệu quả của từng thành phần (truy hồi thưa,
-  truy hồi dày, xếp hạng lại) và chỉ ra điểm nghẽn cần cải thiện.
-  \item \textbf{Về đánh giá:} xây dựng quy trình đánh giá kết hợp thước đo truy hồi, thước
+  VNPost, cung cấp bằng chứng định lượng về hiệu quả của từng thành phần (sparse retrieval,
+  dense retrieval, rerank) và chỉ ra điểm nghẽn cần cải thiện.
+  \item \textbf{Về đánh giá:} xây dựng quy trình đánh giá kết hợp thước đo retrieval, thước
   đo RAGAS và đánh giá bởi LLM, phù hợp với đặc thù tiếng Việt và miền nghiệp vụ hẹp.
   \item \textbf{Về thực tiễn:} đề xuất lộ trình triển khai và ước lượng hiệu quả kinh tế,
   giúp tổ chức ra quyết định đầu tư và mở rộng hệ thống.
@@ -149,12 +149,12 @@ Ngoài phần mở đầu và phụ lục, báo cáo được tổ chức thành
   \item[Chương 1 -- Giới thiệu:] trình bày bối cảnh, mục tiêu, đối tượng, phạm vi, phương
   pháp nghiên cứu, đóng góp và cấu trúc báo cáo.
   \item[Chương 2 -- Cơ sở lý thuyết và tổng quan:] hệ thống hóa kiến thức về chatbot,
-  mô hình ngôn ngữ lớn, \rag, \ft, kiến trúc lai, các thước đo đánh giá và nền tảng triển khai.
+  mô hình ngôn ngữ lớn, \rag, \ft, kiến trúc hybrid, các thước đo đánh giá và nền tảng triển khai.
   \item[Chương 3 -- Kiến trúc hệ thống đề xuất:] phân tích bài toán, yêu cầu và thiết kế
-  kiến trúc đa tác tử, pipeline \rag, pipeline \ft{} và kiến trúc lai cho VNPost.
+  kiến trúc multi-agent, pipeline \rag, pipeline \ft{} và kiến trúc hybrid cho VNPost.
   \item[Chương 4 -- Triển khai thực nghiệm:] mô tả môi trường, dữ liệu, cấu hình \rag,
-  thiết kế \ft, triển khai đa tác tử và hệ thống quan sát.
-  \item[Chương 5 -- Kết quả và đánh giá:] trình bày kết quả truy hồi, kết quả sinh văn bản,
+  thiết kế \ft, triển khai multi-agent và hệ thống quan sát.
+  \item[Chương 5 -- Kết quả và đánh giá:] trình bày kết quả retrieval, kết quả sinh văn bản,
   so sánh các hướng tiếp cận, hiệu năng hệ thống, case study và hiệu quả kinh tế -- xã hội.
   \item[Chương 6 -- Kết luận và hướng phát triển:] tóm tắt kết quả, nêu hạn chế và đề xuất
   hướng phát triển.

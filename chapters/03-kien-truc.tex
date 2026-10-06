@@ -5,8 +5,8 @@
 Trên nền tảng lý thuyết đã trình bày ở chương \ref{ch:coso}, chương này phân tích bài toán
 cụ thể của VNPost và đề xuất kiến trúc trợ lý ảo. Mục \ref{sec:baigtoan} làm rõ đặc thù
 bài toán; mục \ref{sec:yeucau} xác định yêu cầu; mục \ref{sec:multiagent} trình bày kiến
-trúc đa tác tử; mục \ref{sec:pipeline-rag} và mục \ref{sec:pipeline-ft} mô tả pipeline
-\rag{} và pipeline \ft; mục \ref{sec:kien-truc-lai} đề xuất kiến trúc lai; và mục
+trúc multi-agent; mục \ref{sec:pipeline-rag} và mục \ref{sec:pipeline-ft} mô tả pipeline
+\rag{} và pipeline \ft; mục \ref{sec:kien-truc-lai} đề xuất kiến trúc hybrid; và mục
 \ref{sec:hatang} trình bày hạ tầng và bảo mật.
 
 \section{Đặc thù bài toán tại VNPost}
@@ -19,12 +19,12 @@ Dữ liệu nội bộ của VNPost có một số đặc điểm ảnh hưởng
 \begin{itemize}
   \item \textbf{Đa dạng định dạng:} tài liệu tồn tại dưới dạng văn bản số (docx, pdf, txt)
   và cả bản scan. Điều này đòi hỏi bước nhận dạng ký tự quang học và chuẩn hóa về một định
-  dạng thống nhất trước khi lập chỉ mục.
+  dạng thống nhất trước khi indexing.
   \item \textbf{Cấu trúc phức tạp:} nhiều văn bản chứa bảng biểu (biểu phí, thời gian toàn
-  trình, bảng phân loại hàng hóa), tiêu đề nhiều cấp và số hiệu văn bản. Việc chia đoạn
+  trình, bảng phân loại hàng hóa), tiêu đề nhiều cấp và số hiệu văn bản. Việc chunking
   phải bảo toàn bảng và ngữ cảnh tiêu đề.
   \item \textbf{Ngôn ngữ chuyên ngành:} nhiều thuật ngữ, từ viết tắt và số hiệu đặc thù
-  (ví dụ số quyết định, mã dịch vụ), đòi hỏi cấu hình truy hồi thưa phù hợp với tiếng Việt.
+  (ví dụ số quyết định, mã dịch vụ), đòi hỏi cấu hình sparse retrieval phù hợp với tiếng Việt.
   \item \textbf{Tính động:} biểu phí và quy định thay đổi theo thời gian, nên tri thức cần
   được cập nhật mà không phải huấn luyện lại mô hình.
   \item \textbf{Tính bảo mật:} tài liệu nội bộ và dữ liệu khách hàng không được phép rời
@@ -46,7 +46,7 @@ còn các nghiệp vụ mở rộng như tra cứu chất lượng phát và tra
   \item Trả lời câu hỏi tự nhiên dựa trên tài liệu nội bộ, có trích dẫn nguồn.
   \item Ngữ cảnh hóa câu trả lời theo lịch sử hội thoại nhiều lượt.
   \item Tra cứu tình trạng bưu gửi và thông tin bưu cục qua kết nối hệ thống nghiệp vụ.
-  \item Định tuyến yêu cầu đến tác tử chuyên biệt phù hợp và hợp nhất kết quả.
+  \item Định tuyến yêu cầu đến agent chuyên biệt phù hợp và hợp nhất kết quả.
   \item Hỗ trợ tạo phiếu yêu cầu (ticket) khi cần chuyển sang hỗ trợ thủ công.
   \item Gợi ý câu hỏi mở đầu phù hợp với nhu cầu người dùng.
 \end{itemize}
@@ -55,21 +55,21 @@ còn các nghiệp vụ mở rộng như tra cứu chất lượng phát và tra
 
 \begin{itemize}
   \item \textbf{Chính xác và có căn cứ:} câu trả lời phải bám sát tài liệu, hạn chế tối đa
-  ảo giác.
+  hallucination.
   \item \textbf{Bảo mật:} toàn bộ mô hình và dữ liệu vận hành cục bộ, không gửi ra ngoài.
-  \item \textbf{Độ trễ chấp nhận được:} phản hồi trong vài giây cho câu hỏi thông thường.
-  \item \textbf{Khả năng mở rộng:} dễ thêm tác tử, kho tài liệu và mô hình mới.
+  \item \textbf{Latency chấp nhận được:} phản hồi trong vài giây cho câu hỏi thông thường.
+  \item \textbf{Khả năng mở rộng:} dễ thêm agent, kho tài liệu và mô hình mới.
   \item \textbf{Quan sát được:} có vết, log và chỉ số để giám sát và cải tiến.
   \item \textbf{Kiểm soát truy cập:} phân quyền theo vai trò đối với dữ liệu nhạy cảm.
 \end{itemize}
 
-\section{Kiến trúc tổng thể đa tác tử}
+\section{Kiến trúc tổng thể multi-agent}
 \label{sec:multiagent}
 
-Đề tài đề xuất kiến trúc \emph{đa tác tử} gồm một tác tử điều phối trung tâm (host
-orchestrator) và các tác tử chuyên biệt. Tác tử điều phối chịu trách nhiệm hiểu yêu cầu,
-duy trì ngữ cảnh hội thoại, quyết định định tuyến và hợp nhất câu trả lời. Các tác tử
-chuyên biệt đảm nhận từng miền nghiệp vụ hẹp và được gọi qua giao thức A2A; mỗi tác tử
+Đề tài đề xuất kiến trúc \emph{multi-agent} gồm một agent điều phối trung tâm (host
+orchestrator) và các agent chuyên biệt. Agent điều phối chịu trách nhiệm hiểu yêu cầu,
+duy trì ngữ cảnh hội thoại, quyết định định tuyến và hợp nhất câu trả lời. Các agent
+chuyên biệt đảm nhận từng miền nghiệp vụ hẹp và được gọi qua giao thức A2A; mỗi agent
 truy cập công cụ của mình qua giao thức MCP.
 
 \begin{figure}[htbp]
@@ -82,10 +82,10 @@ truy cập công cụ của mình qua giao thức MCP.
   arrow/.style={-{Latex[length=2mm]},thick,vnpostdark},
   biarrow/.style={{Latex[length=2mm]}-{Latex[length=2mm]},thick,vnpostdark}
 ]
-\node[host] (host) {Tác tử điều phối (Host)};
-\node[agent,below left=16mm and 30mm of host] (spdv) {Tác tử RAG\\sản phẩm -- dịch vụ};
-\node[agent,below=16mm of host] (buugui) {Tác tử tra cứu\\bưu gửi};
-\node[agent,below right=16mm and 30mm of host] (buucuc) {Tác tử tra cứu\\bưu cục};
+\node[host] (host) {Agent điều phối (Host)};
+\node[agent,below left=16mm and 30mm of host] (spdv) {Agent RAG\\sản phẩm -- dịch vụ};
+\node[agent,below=16mm of host] (buugui) {Agent tra cứu\\bưu gửi};
+\node[agent,below right=16mm and 30mm of host] (buucuc) {Agent tra cứu\\bưu cục};
 \node[sys,below=of spdv] (qdrant) {Qdrant + reranker};
 \node[sys,below=of buugui] (track) {Hệ thống tracking};
 \node[sys,below=of buucuc] (pg) {CSDL bưu cục};
@@ -98,20 +98,20 @@ truy cập công cụ của mình qua giao thức MCP.
 \node[font=\scriptsize,above=2mm of host] {Người dùng $\leftrightarrow$ Host (giao thức hội thoại)};
 \node[font=\scriptsize,below=1mm of host] {A2A};
 \end{tikzpicture}
-\caption{Kiến trúc đa tác tử: host điều phối các tác tử chuyên biệt qua A2A.}
+\caption{Kiến trúc multi-agent: host điều phối các agent chuyên biệt qua A2A.}
 \label{fig:multiagent}
 \end{figure}
 
-Ưu điểm của kiến trúc này là tách biệt trách nhiệm rõ ràng: mỗi tác tử có prompt, công cụ
-và kho dữ liệu riêng, dễ kiểm thử và nâng cấp độc lập. Tác tử điều phối chỉ cần biết
+Ưu điểm của kiến trúc này là tách biệt trách nhiệm rõ ràng: mỗi agent có prompt, công cụ
+và kho dữ liệu riêng, dễ kiểm thử và nâng cấp độc lập. Agent điều phối chỉ cần biết
 ``khi nào gọi ai'', nhờ đó giảm tải nhận thức và tăng độ ổn định.
 
 \section{Pipeline RAG chi tiết}
 \label{sec:pipeline-rag}
 
-\subsection{Pha lập chỉ mục}
+\subsection{Pha indexing}
 
-Pha lập chỉ mục biến tài liệu thô thành các đoạn vector trong Qdrant qua các bước:
+Pha indexing biến tài liệu thô thành các chunk vector trong Qdrant qua các bước:
 
 \begin{enumerate}
   \item \textbf{Thu thập và chuẩn hóa:} tài liệu được thu thập, với các bản scan được xử lý
@@ -120,24 +120,24 @@ Pha lập chỉ mục biến tài liệu thô thành các đoạn vector trong Q
   toàn tiêu đề và bảng.
   \item \textbf{Trích xuất metadata:} mỗi tài liệu được gắn metadata như tiêu đề, số hiệu
   văn bản, ngày ban hành và tóm tắt do mô hình ngôn ngữ sinh ra.
-  \item \textbf{Chia đoạn:} văn bản được chia thành các đoạn nhận biết cấu trúc, với độ dài
+  \item \textbf{Chunking:} văn bản được chia thành các chunk nhận biết cấu trúc, với độ dài
   tối đa và độ chồng lấn hợp lý, bảo toàn bảng biểu.
-  \item \textbf{Nhúng và lưu trữ:} mỗi đoạn được nhúng thành vector bằng mô hình nhúng và
-  lưu vào Qdrant, cùng vector thưa cho BM25.
+  \item \textbf{Embedding và lưu trữ:} mỗi chunk được biểu diễn thành embedding vector bằng embedding model và
+  lưu vào Qdrant, cùng sparse vector cho BM25.
 \end{enumerate}
 
-\subsection{Pha truy hồi và sinh}
+\subsection{Pha retrieval và sinh}
 
 Khi có câu hỏi, hệ thống thực hiện:
 
 \begin{enumerate}
-  \item \textbf{Nhúng câu hỏi} bằng cùng mô hình nhúng đã dùng khi lập chỉ mục.
-  \item \textbf{Truy hồi lai:} chạy song song truy hồi thưa BM25 và truy hồi dày, mỗi nhánh
+  \item \textbf{Embedding câu hỏi} bằng cùng embedding model đã dùng khi indexing.
+  \item \textbf{Hybrid retrieval:} chạy song song sparse retrieval BM25 và dense retrieval, mỗi nhánh
   lấy top-$k_1$ ứng viên (ví dụ 20).
   \item \textbf{Hợp ứng viên:} gộp kết quả hai nhánh và loại trùng.
-  \item \textbf{Xếp hạng lại:} dùng cross-encoder xếp hạng lại toàn bộ ứng viên và giữ
+  \item \textbf{Rerank:} dùng cross-encoder rerank toàn bộ ứng viên và giữ
   top-$k_2$ (ví dụ 5) làm ngữ cảnh.
-  \item \textbf{Sinh câu trả lời:} mô hình ngôn ngữ nhận câu hỏi, ngữ cảnh truy hồi và lịch
+  \item \textbf{Sinh câu trả lời:} mô hình ngôn ngữ nhận câu hỏi, ngữ cảnh retrieval và lịch
   sử hội thoại để sinh câu trả lời có trích nguồn.
 \end{enumerate}
 
@@ -151,10 +151,10 @@ Khi có câu hỏi, hệ thống thực hiện:
 \node[proc] (doc) {Tài liệu nội bộ (docx/pdf/txt/scan)};
 \node[proc,below=of doc] (ocr) {OCR + chuẩn hóa Markdown};
 \node[proc,below=of ocr] (meta) {Trích xuất metadata (title, số hiệu, ngày, tóm tắt)};
-\node[proc,below=of meta] (chunk) {Chia đoạn nhận biết cấu trúc (bảo toàn bảng)};
-\node[proc,below=of chunk] (emb) {Nhúng vector Qwen3 + vector thưa BM25};
+\node[proc,below=of meta] (chunk) {Chunking nhận biết cấu trúc (bảo toàn bảng)};
+\node[proc,below=of chunk] (emb) {Embedding vector Qwen3 + sparse vector BM25};
 \node[proc,below=of emb] (store) {Lưu Qdrant (dense COSINE + sparse IDF)};
-\node[proc,below=of store] (ret) {Truy hồi lai top-20/20 $\rightarrow$ hợp $\rightarrow$ rerank $\rightarrow$ top-5};
+\node[proc,below=of store] (ret) {Hybrid retrieval top-20/20 $\rightarrow$ hợp $\rightarrow$ rerank $\rightarrow$ top-5};
 \node[proc,below=of ret] (gen) {LLM sinh câu trả lời có trích nguồn};
 \draw[arrow] (doc) -- (ocr);
 \draw[arrow] (ocr) -- (meta);
@@ -164,13 +164,13 @@ Khi có câu hỏi, hệ thống thực hiện:
 \draw[arrow] (store) -- (ret);
 \draw[arrow] (ret) -- (gen);
 \end{tikzpicture}
-\caption{Pipeline RAG đầy đủ từ lập chỉ mục đến sinh câu trả lời.}
+\caption{Pipeline RAG đầy đủ từ indexing đến sinh câu trả lời.}
 \label{fig:pipeline-rag}
 \end{figure}
 
 \subsection{Tham số hóa và cấu hình}
 
-Các tham số chính gồm số ứng viên mỗi nhánh truy hồi ($k_1$), số đoạn sau xếp hạng lại
+Các tham số chính gồm số ứng viên mỗi nhánh retrieval ($k_1$), số chunk sau rerank
 ($k_2$) và ngưỡng điểm tối thiểu để loại bỏ ngữ cảnh không liên quan. Cấu hình thực tế được
 trình bày ở chương \ref{ch:trienkhai}. Cơ chế ngưỡng điểm giúp hệ thống từ chối trả lời
 khi không tìm thấy bằng chứng phù hợp, thay vì ``bịa'' câu trả lời.
@@ -195,7 +195,7 @@ tập huấn luyện, tập kiểm định và tập kiểm thử.
 
 Đề xuất sử dụng LoRA hoặc QLoRA với hạng $r=16$, hệ số $\alpha=32$, dropout nhỏ, và áp dụng
 lên các ma trận chiếu trong khối attention và feed-forward (query, key, value, output,
-gate, up, down). Mô hình gốc được giữ ở định dạng lượng tử hóa 4 bit khi dùng QLoRA để tiết
+gate, up, down). Mô hình gốc được giữ ở định dạng quantization 4 bit khi dùng QLoRA để tiết
 kiệm bộ nhớ. Sau huấn luyện, adapter có thể được gộp (merge) vào mô hình gốc hoặc phục vụ
 như một adapter riêng trong vLLM.
 
@@ -228,21 +228,21 @@ quan ở chương \ref{ch:ketqua} (nếu có) được ghi rõ là kết quả m
 huấn luyện thật trên hạ tầng VNPost.
 \end{ghichu}
 
-\section{Kiến trúc lai RAG + Fine-tuning}
+\section{Kiến trúc hybrid RAG + Fine-tuning}
 \label{sec:kien-truc-lai}
 
-Kiến trúc lai sử dụng một bộ định tuyến để quyết định chiến lược trả lời:
+Kiến trúc hybrid sử dụng một router để quyết định chiến lược trả lời:
 
 \begin{itemize}
   \item \textbf{Chỉ RAG:} với câu hỏi cần tri thức động hoặc cần trích dẫn nguồn (biểu phí,
   quy định, số hiệu văn bản). Đây là chế độ mặc định cho phần lớn truy vấn.
-  \item \textbf{Chỉ mô hình tinh chỉnh:} với câu hỏi về phong cách, định dạng, hướng dẫn quy
+  \item \textbf{Chỉ mô hình fine-tuning:} với câu hỏi về phong cách, định dạng, hướng dẫn quy
   trình ổn định, hoặc khi cần câu trả lời ngắn gọn theo mẫu nghiệp vụ.
-  \item \textbf{Kết hợp:} mô hình tinh chỉnh sinh khung câu trả lời theo định dạng nghiệp vụ,
+  \item \textbf{Kết hợp:} mô hình fine-tuning sinh khung câu trả lời theo định dạng nghiệp vụ,
   sau đó \rag{} bổ sung bằng chứng và số liệu cụ thể; mô hình hợp nhất tạo câu trả lời cuối.
 \end{itemize}
 
-Bộ định tuyến có thể dựa trên phân loại ý định nhẹ, hoặc để chính tác tử điều phối quyết
+Router có thể dựa trên phân loại ý định nhẹ, hoặc để chính agent điều phối quyết
 định dựa trên prompt. Khi \rag{} không tìm thấy bằng chứng đủ tin cậy, hệ thống chuyển sang
 thông báo thiếu thông tin hoặc tạo ticket, tránh sinh câu trả lời không căn cứ.
 
@@ -255,9 +255,9 @@ thông báo thiếu thông tin hoặc tạo ticket, tránh sinh câu trả lời
   arrow/.style={-{Latex[length=2mm]},thick,vnpostdark}
 ]
 \node[proc] (q) {Câu hỏi người dùng};
-\node[dec,below=of q] (router) {Bộ định tuyến};
+\node[dec,below=of q] (router) {Router};
 \node[proc,below left=14mm and 26mm of router] (rag) {RAG (tri thức động)};
-\node[proc,below right=14mm and 26mm of router] (ft) {Mô hình tinh chỉnh (hành vi)};
+\node[proc,below right=14mm and 26mm of router] (ft) {Mô hình fine-tuning (hành vi)};
 \node[proc,below=26mm of router] (comb) {Hợp nhất câu trả lời};
 \node[proc,below=of comb] (ans) {Câu trả lời cuối (có trích nguồn)};
 \draw[arrow] (q) -- (router);
@@ -267,7 +267,7 @@ thông báo thiếu thông tin hoặc tạo ticket, tránh sinh câu trả lời
 \draw[arrow] (ft) -- (comb);
 \draw[arrow] (comb) -- (ans);
 \end{tikzpicture}
-\caption{Kiến trúc lai: bộ định tuyến chọn RAG, mô hình tinh chỉnh hoặc kết hợp.}
+\caption{Kiến trúc hybrid: router chọn RAG, mô hình fine-tuning hoặc kết hợp.}
 \label{fig:kien-truc-lai}
 \end{figure}
 
@@ -277,9 +277,9 @@ thông báo thiếu thông tin hoặc tạo ticket, tránh sinh câu trả lời
 \subsection{Hạ tầng phục vụ}
 
 Toàn bộ hệ thống được triển khai trên Kubernetes để bảo đảm khả năng mở rộng và ổn định.
-Các mô hình được phục vụ cục bộ bằng vLLM với lượng tử hóa FP8. Các mô hình chính gồm: mô
-hình sinh ngôn ngữ (ví dụ họ Qwen với các biến thể 27B--35B), mô hình nhúng văn bản (ví dụ
-Qwen3-Embedding-8B), mô hình xếp hạng lại (Qwen3-Reranker-8B) và mô hình OCR. Qdrant đảm
+Các mô hình được phục vụ cục bộ bằng vLLM với quantization FP8. Các mô hình chính gồm: mô
+hình sinh ngôn ngữ (ví dụ họ Qwen với các biến thể 27B--35B), embedding model văn bản (ví dụ
+Qwen3-Embedding-8B), reranker (Qwen3-Reranker-8B) và mô hình OCR. Qdrant đảm
 nhiệm lưu trữ vector.
 
 \subsection{Bảo mật dữ liệu}
@@ -291,6 +291,6 @@ trong log trước khi dùng cho phân tích hoặc \ft; và (iv) phân quyền 
 
 \section*{Kết chương}
 \addcontentsline{toc}{section}{Kết chương}
-Chương này đã phân tích bài toán VNPost, xác định yêu cầu và đề xuất kiến trúc đa tác tử
+Chương này đã phân tích bài toán VNPost, xác định yêu cầu và đề xuất kiến trúc multi-agent
 kết hợp \rag{} lai với \ft{} theo mô hình lai. Chương tiếp theo mô tả việc triển khai thực
 nghiệm các thành phần này cùng các tham số cụ thể.
