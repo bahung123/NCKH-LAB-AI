@@ -73,17 +73,20 @@ kiến trúc trợ lý ảo đa tác tử (multi-agent) gồm một agent điề
 chuyên biệt, giao tiếp qua các giao thức MCP và A2A; triển khai pipeline RAG lai
 (hybrid) kết hợp sparse retrieval BM25 và dense retrieval trên vector database Qdrant,
 kèm reranker; đồng thời đề xuất pipeline fine-tuning cho cả ba loại mô hình: LLM (LoRA/QLoRA),
-embedding model và reranker. Toàn bộ mô hình được phục vụ cục bộ (on-premise) bằng vLLM để bảo đảm dữ
-liệu nội bộ không rời khỏi hạ tầng của VNPost.
+embedding model và reranker, trong đó thí điểm huấn luyện và đánh giá thật embedding model.
+Toàn bộ mô hình được phục vụ cục bộ (on-premise) bằng vLLM để bảo đảm dữ liệu nội bộ không
+rời khỏi hạ tầng của VNPost.
 
 Kết quả triển khai cho thấy dense retrieval mạnh ở việc bắt ngữ nghĩa khi câu hỏi diễn đạt
 khác với từ khóa trong tài liệu, trong khi BM25 bổ trợ tốt cho từ khóa chính xác và số hiệu
 văn bản; hybrid retrieval đảm bảo phạm vi ứng viên đầy đủ. Phân tách lỗi giữa khâu retrieval
 và khâu rerank cho phép định vị rõ điểm cần cải thiện, và quan sát thực tế cho thấy khâu
 rerank đang là điểm nghẽn cần xử lý trước. Với miền EMS, bộ đánh giá gồm 99 câu hỏi đã được
-chuẩn bị và thu thập đầy đủ phản hồi. Báo cáo cũng trình bày hệ thống đánh giá sinh văn bản
-bằng LLM-as-judge và bộ thước đo RAGAS, kết quả hiệu năng của vLLM, hiệu quả vận hành theo
-hướng định tính, và đề xuất kiến trúc hybrid RAG + fine-tuning cùng
+chuẩn bị và thu thập đầy đủ phản hồi. Ở phần fine-tuning, embedding model đã được thí điểm
+huấn luyện theo học tương phản và đạt mức cải thiện tương đối khoảng 29--33\% trên các chỉ số
+Accuracy@1, Accuracy@5 và NDCG@10 so với mô hình nền. Báo cáo cũng trình bày hệ thống đánh giá
+sinh văn bản bằng LLM-as-judge và bộ thước đo RAGAS, kết quả hiệu năng của vLLM, hiệu quả vận
+hành theo hướng định tính, và đề xuất kiến trúc hybrid RAG + fine-tuning cùng
 lộ trình phát triển. Kết quả cho thấy RAG là giải pháp phù hợp và khả thi cho tri thức
 động, còn fine-tuning bổ trợ cho phong cách và nghiệp vụ ổn định, và sự kết hợp của hai
 hướng tiếp cận mang lại giá trị thực tiễn cao cho \vnpost.

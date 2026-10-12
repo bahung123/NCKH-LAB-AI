@@ -128,10 +128,96 @@ khi thiếu thông tin.
 \section{Thiết kế fine-tuning}
 \label{sec:cai-dat-ft}
 
-Như đã nêu, đây là phần \emph{thiết kế đề xuất} cho cả ba loại mô hình. Bảng \ref{tab:lora}
-trình bày cấu hình LoRA/QLoRA cho LLM; bảng \ref{tab:emb-ft} cho embedding model; và bảng
-\ref{tab:rerank-ft} cho reranker. Hiện tại embedding model và reranker đang dùng nguyên bản;
-các cấu hình dưới đây là đề xuất để cải thiện khâu retrieval và rerank.
+Trong ba loại mô hình, pipeline cho \textbf{embedding model} đã được thí điểm triển khai và
+đánh giá thật trên Qwen3-Embedding-0.6B với một bộ dữ liệu TTHC tiếng Việt; \textbf{LLM} và
+\textbf{reranker} vẫn ở mức \emph{đề xuất}. Mục này trình bày dữ liệu (\ref{sec:ft-data}) và
+cấu hình huấn luyện (\ref{sec:ft-config}), cách đóng gói phục vụ (\ref{sec:ft-deploy}), rồi
+các đề xuất cho LLM và reranker.
+
+\subsection{Dữ liệu thí điểm cho embedding model}
+\label{sec:ft-data}
+
+Bộ dữ liệu gồm 199 văn bản TTHC, chia thành 179 văn bản huấn luyện và 20 văn bản kiểm định
+theo tỷ lệ $0{,}1$ (hạt giống ngẫu nhiên 42 để tái lập). Sau khi khử trùng lặp theo văn bản,
+tập kiểm định còn 708 truy vấn duy nhất và 1.319 đoạn văn bản. Mỗi mẫu huấn luyện là bộ ba
+$(\text{query},\text{positive},\text{negative})$, với tối đa $k=3$ hard negative cho mỗi truy
+vấn; tập kiểm định chia theo văn bản nên không rò rỉ chunk giữa hai tập. Bảng
+\ref{tab:ft-dataset} tổng hợp thống kê.
+
+\begin{table}[htbp]
+\centering
+\caption{Thống kê bộ dữ liệu thí điểm cho embedding model.}
+\label{tab:ft-dataset}
+\small
+\begin{tabular}{@{}lr@{}}
+\toprule
+\textbf{Tham số} & \textbf{Giá trị} \\
+\midrule
+Văn bản (train / val) & 179 / 20 \\
+Tỷ lệ kiểm định (theo văn bản) & 0{,}1 \\
+Truy vấn (train / val) & 6.606 / 717 \\
+Bộ ba (train / val) & 18.569 / 2.112 \\
+Truy vấn val duy nhất & 708 \\
+Đoạn văn bản val duy nhất & 1.319 \\
+Số negative tối đa mỗi truy vấn & 3 \\
+Negative bị loại khi làm sạch & 1.491 \\
+Bộ ba bị loại (vượt hạn mức) & 990 \\
+Hạt giống & 42 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Cấu hình huấn luyện và đánh giá}
+\label{sec:ft-config}
+
+Bảng \ref{tab:ft-emb-config} liệt kê cấu hình huấn luyện. Mô hình được huấn luyện trên một
+GPU Tesla T4 trong 202,5 phút, bộ nhớ đỉnh được cấp phát 7,59 GB (52,1\% dung lượng GPU).
+Đánh giá dùng \texttt{InformationRetrievalEvaluator} của \texttt{sentence-transformers}, với
+truy vấn và kho văn bản được khử trùng lặp theo văn bản (mỗi chuỗi chỉ xuất hiện một lần, một
+truy vấn có thể có nhiều positive) để tránh hiện tượng ``trần điểm giả'' khi văn bản trùng lặp
+xuất hiện nhiều lần trong kho.
+
+\begin{table}[htbp]
+\centering
+\caption{Cấu hình huấn luyện và đánh giá embedding model (thí điểm).}
+\label{tab:ft-emb-config}
+\small
+\begin{tabular}{@{}p{6.4cm}p{8cm}@{}}
+\toprule
+\textbf{Tham số} & \textbf{Giá trị} \\
+\midrule
+Mô hình nền & \texttt{unsloth/Qwen3-Embedding-0.6B} \\
+Phương pháp & LoRA, $r=32$, $\alpha=32$, 7 ma trận chiếu \\
+Độ dài chuỗi tối đa & 1.024 token \\
+Hàm mất mát & MultipleNegativesRankingLoss ($\tau^{-1}=20$) \\
+Bộ lấy mẫu batch & \texttt{NO\_DUPLICATES} \\
+Số epoch & 2 \\
+Batch hiệu dụng & 256 (64 $\times$ 4 bước tích luỹ) \\
+Tốc độ học / scheduler & $3\times10^{-5}$ / cosine, warmup 0{,}05 \\
+Độ chính xác & fp16 \\
+Đánh giá / checkpoint & mỗi 20 bước \\
+Chỉ số chọn mô hình tốt nhất & NDCG@10 trên tập kiểm định \\
+Pooling / chuẩn hoá & last-token / L2 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Đóng gói và phục vụ}
+\label{sec:ft-deploy}
+
+Adapter LoRA của checkpoint tốt nhất được gộp vào mô hình nền ở độ chính xác fp32 rồi lưu
+fp16. Mô hình gộp được chuyển sang định dạng GGUF (F16) bằng \texttt{convert\_hf\_to\_gguf.py}
+và lượng tử hoá về Q8\_0 bằng \texttt{llama-quantize} của \texttt{llama.cpp}~\cite{llamacpp2024};
+cấu hình pooling (last-token) và chuẩn hoá L2 được giữ khớp với lúc huấn luyện. Mô hình GGUF
+được phục vụ qua \texttt{llama-server} ở chế độ embedding với \texttt{-ngl 99} (đẩy toàn bộ
+layer lên GPU) và \texttt{-c 2048}, cung cấp API tương thích OpenAI tại \texttt{/v1/embeddings}.
+Vì mô hình không tự thêm tiền tố instruction, phía client phải thêm chuỗi tiền tố cho truy vấn
+(tài liệu giữ nguyên văn bản thô).
+
+\subsection{Đề xuất cho LLM và reranker}
+
+Với LLM và reranker, đây vẫn là phần \emph{thiết kế đề xuất}. Bảng \ref{tab:lora} trình bày
+cấu hình LoRA/QLoRA cho LLM và bảng \ref{tab:rerank-ft} cho reranker.
 
 \begin{table}[htbp]
 \centering
@@ -151,29 +237,6 @@ Tốc độ học & $1\times10^{-4}$ đến $2\times10^{-4}$ \\
 Số epoch & 2--3 \\
 Độ dài ngữ cảnh & 4096 token \\
 Chiến lược & SFT, có thể bổ sung DPO \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{table}[htbp]
-\centering
-\caption{Cấu hình fine-tuning embedding model đề xuất.}
-\label{tab:emb-ft}
-\small
-\begin{tabular}{@{}p{6.4cm}p{8cm}@{}}
-\toprule
-\textbf{Tham số} & \textbf{Giá trị đề xuất} \\
-\midrule
-Mô hình nền & Qwen3-Embedding (4096 chiều) \\
-Phương pháp & Contrastive learning \\
-Hàm mất mát & Multiple Negatives Ranking Loss \\
-Mẫu âm & In-batch negatives + hard negatives (BM25/dense top-$k$ sai) \\
-Hạng $r$ (nếu dùng LoRA) & 16 \\
-Tốc độ học & $1\times10^{-5}$ đến $2\times10^{-5}$ \\
-Số epoch & 3--5 \\
-Độ dài tối đa & 512 token \\
-Chỉ dẫn (instruction) & Chỉ áp dụng cho truy vấn \\
-Đánh giá & Recall@$k$, MRR (phải re-embed toàn bộ corpus) \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -200,9 +263,9 @@ Số epoch & 2--4 \\
 \end{tabular}
 \end{table}
 
-Quy trình chung: làm sạch dữ liệu $\rightarrow$ định dạng theo loại mô hình $\rightarrow$ chia
-tập theo câu hỏi $\rightarrow$ huấn luyện $\rightarrow$ đánh giá trên tập kiểm định
-$\rightarrow$ đóng gói để phục vụ bằng vLLM. Lưu ý riêng cho embedding: sau khi thay mô hình
+Quy trình chung cho phần đề xuất: làm sạch dữ liệu $\rightarrow$ định dạng theo loại mô hình
+$\rightarrow$ chia tập theo câu hỏi $\rightarrow$ huấn luyện $\rightarrow$ đánh giá trên tập
+kiểm định $\rightarrow$ đóng gói để phục vụ. Lưu ý riêng cho embedding: sau khi thay mô hình
 phải \emph{re-embed toàn bộ corpus} và dựng lại chỉ mục Qdrant trước khi đo lại Recall@$k$.
 
 \section{Triển khai multi-agent}

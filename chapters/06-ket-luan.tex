@@ -19,10 +19,11 @@ Bưu điện Việt Nam, dựa trên mô hình ngôn ngữ lớn kết hợp k�
   \item \textbf{Triển khai pipeline \rag{} lai:} cài đặt sparse retrieval BM25 và dense retrieval
   trên Qdrant, kết hợp rerank bằng cross-encoder, cùng quy trình tiền xử lý tài liệu
   (OCR, Markdown hóa, metadata hóa, structure-aware chunking).
-  \item \textbf{Đề xuất pipeline \ft:} thiết kế quy trình thu thập dữ liệu, ẩn PII và fine-tuning
-  cho cả ba loại mô hình: LLM (LoRA/QLoRA), embedding model (contrastive learning) và
-  reranker cross-encoder; phục vụ bằng vLLM, kèm tiêu chí quyết định khi nào dùng
-  \rag, \ft{} hoặc kết hợp.
+  \item \textbf{Pipeline \ft:} đề xuất quy trình thu thập dữ liệu, ẩn PII và fine-tuning cho
+  cả ba loại mô hình -- LLM (LoRA/QLoRA), embedding model (contrastive learning) và reranker
+  cross-encoder -- và \emph{thí điểm} huấn luyện, đóng gói cho embedding model; kèm tiêu chí
+  quyết định khi nào dùng \rag, \ft{} hoặc kết hợp. Thí điểm embedding đạt Accuracy@1 tăng từ
+  0,2556 lên 0,3291 và NDCG@10 từ 0,3931 lên 0,5132 (tăng tương đối khoảng 29--31\%).
   \item \textbf{Hệ thống đánh giá:} đã xây dựng quy trình đánh giá retrieval tái lập đúng
   đường đi sản xuất, kèm cơ chế phân tách lỗi giữa khâu retrieval và khâu rerank; đã xây
   dựng bộ công cụ đánh giá sinh văn bản (LLM-as-judge và RAGAS) và chuẩn bị bộ đánh giá
@@ -46,8 +47,9 @@ Bên cạnh kết quả đạt được, đề tài còn một số hạn chế:
   định tính và cần được kiểm chứng bằng số liệu.
   \item \textbf{Suy giảm recall ở khâu rerank:} cấu hình hiện tại làm mất một phần
   chunk đúng ở top-$k$ nhỏ, cần cải tiến.
-  \item \textbf{Chưa huấn luyện \ft{} thật:} phần \ft{} mới dừng ở thiết kế; chưa có bằng
-  chứng định lượng về hiệu quả của mô hình fine-tuning.
+  \item \textbf{Phần \ft{} chưa hoàn chỉnh:} embedding model đã được thí điểm và có kết quả
+  định lượng, nhưng trên mô hình 0.6B và corpus TTHC độc lập (chưa phải dữ liệu sản xuất của
+  VNPost); LLM và reranker mới dừng ở thiết kế, chưa có bằng chứng huấn luyện thật.
   \item \textbf{Đánh giá chủ yếu dựa trên mô hình:} các thước đo RAGAS và LLM-as-judge có
   thể mang sai lệch của mô hình đánh giá; chưa có đánh giá diện rộng với người dùng cuối.
   \item \textbf{Phạm vi miền hẹp:} thực nghiệm tập trung vào bưu chính/EMS; tính khái quát
@@ -62,8 +64,9 @@ Trên cơ sở kết quả và hạn chế, đề tài đề xuất các hướn
   \item \textbf{Mở rộng và chuẩn hóa đánh giá:} hoàn tất tổng hợp điểm RAGAS trên bộ 99 câu
   và mở rộng lên hàng trăm tới hàng nghìn câu; bổ sung đánh giá A/B với người dùng cuối.
   \item \textbf{Cải tiến retrieval và rerank:} điều chỉnh $k_2$ và ngưỡng điểm; thử
-  nghiệm kết hợp điểm rerank với điểm retrieval; fine-tuning embedding model và reranker
-  trên dữ liệu tiếng Việt miền bưu chính để nâng Recall@5 sau rerank.
+  nghiệm kết hợp điểm rerank với điểm retrieval; mở rộng thí điểm fine-tune embedding lên mô
+  hình lớn hơn (Qwen3-Embedding-8B) trên dữ liệu tiếng Việt miền bưu chính, và fine-tune
+  reranker để nâng Recall@5 sau rerank.
   \item \textbf{Nâng cấp lên agentic RAG:} cho phép agent tự quyết định truy xuất nhiều vòng,
   cải viết truy vấn và gọi công cụ bổ trợ khi ngữ cảnh chưa đủ.
   \item \textbf{Khai thác GraphRAG:} xây dựng đồ thị tri thức từ tài liệu để truy xuất theo
