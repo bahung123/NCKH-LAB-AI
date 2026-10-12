@@ -63,10 +63,10 @@ bộ, vận hành an toàn trên hạ tầng riêng và có thể mở rộng th
   \item Triển khai và thực nghiệm một pipeline \rag{} lai kết hợp sparse retrieval BM25 và
   dense retrieval trên vector database, có bước rerank, nhằm tạo câu trả lời bám
   sát tài liệu.
-  \item Đề xuất và mô tả pipeline \ft{} cho cả ba loại mô hình -- LLM (LoRA/QLoRA), embedding
-  model và reranker -- cùng
-  tiêu chí quyết định khi nào nên dùng \rag, khi nào nên dùng mô hình đã fine-tuning, và
-  cách kết hợp hai hướng tiếp cận trong một kiến trúc hybrid.
+  \item Đề xuất pipeline \ft{} cho cả ba loại mô hình -- LLM (LoRA/QLoRA), embedding model và
+  reranker -- trong đó thí điểm huấn luyện và đánh giá thật embedding model; cùng tiêu chí
+  quyết định khi nào nên dùng \rag, khi nào nên dùng mô hình đã fine-tuning, và cách kết hợp
+  hai hướng tiếp cận trong một kiến trúc hybrid.
   \item Đánh giá hệ thống bằng các thước đo định lượng (Recall@k, MRR, các thước đo RAGAS,
   đánh giá bởi mô hình ngôn ngữ) và định tính (case study hội thoại), từ đó rút ra bài học
   triển khai và đề xuất lộ trình phát triển.
@@ -135,7 +135,9 @@ Các đóng góp chính của đề tài bao gồm:
   hạ tầng tổ chức.
   \item \textbf{Về thực nghiệm:} triển khai và đo đạc trên dữ liệu và nghiệp vụ thực tế của
   VNPost, cung cấp bằng chứng định lượng về hiệu quả của từng thành phần (sparse retrieval,
-  dense retrieval, rerank) và chỉ ra điểm nghẽn cần cải thiện.
+  dense retrieval, rerank) và chỉ ra điểm nghẽn cần cải thiện; thí điểm fine-tune embedding
+  model cho truy xuất tiếng Việt, đạt mức cải thiện tương đối khoảng 29--33\% trên các chỉ số
+  Accuracy@1, Accuracy@5 và NDCG@10.
   \item \textbf{Về đánh giá:} xây dựng quy trình đánh giá kết hợp thước đo retrieval, thước
   đo RAGAS và đánh giá bởi LLM, phù hợp với đặc thù tiếng Việt và miền nghiệp vụ hẹp.
   \item \textbf{Về thực tiễn:} đề xuất lộ trình triển khai và ước lượng hiệu quả kinh tế,
@@ -155,8 +157,9 @@ Ngoài phần mở đầu và phụ lục, báo cáo được tổ chức thành
   kiến trúc multi-agent, pipeline \rag, pipeline \ft{} và kiến trúc hybrid cho VNPost.
   \item \textbf{Chương 4 -- Triển khai thực nghiệm:} mô tả môi trường, dữ liệu, cấu hình \rag,
   thiết kế \ft, triển khai multi-agent và hệ thống quan sát.
-  \item \textbf{Chương 5 -- Kết quả và đánh giá:} trình bày kết quả retrieval, kết quả sinh văn bản,
-  so sánh các hướng tiếp cận, hiệu năng hệ thống, case study và hiệu quả kinh tế -- xã hội.
+  \item \textbf{Chương 5 -- Kết quả và đánh giá:} trình bày kết quả retrieval, kết quả fine-tune
+  embedding model, kết quả sinh văn bản, so sánh các hướng tiếp cận, hiệu năng hệ thống, case
+  study và hiệu quả kinh tế -- xã hội.
   \item \textbf{Chương 6 -- Kết luận và hướng phát triển:} tóm tắt kết quả, nêu hạn chế và đề xuất
   hướng phát triển.
 \end{itemize}

@@ -180,22 +180,22 @@ khi không tìm thấy bằng chứng phù hợp, thay vì ``bịa'' câu trả 
 \section{Pipeline fine-tuning đề xuất}
 \label{sec:pipeline-ft}
 
-Vì codebase hiện tại của VNPost chưa có pipeline \ft, phần này trình bày \emph{thiết kế đề
-xuất}. Trong một hệ \rag, có \emph{ba loại mô hình} có thể được fine-tune với mục tiêu khác
-nhau: (i) \textbf{LLM} sinh câu trả lời -- điều chỉnh hành vi, phong cách và định dạng
-nghiệp vụ; (ii) \textbf{embedding model} -- cải thiện chất lượng biểu diễn để dense retrieval
-chính xác hơn; và (iii) \textbf{reranker} -- cải thiện xếp hạng để giữ đúng chunk trong
-top-$k$. Hai loại sau tác động trực tiếp vào khâu retrieval/rerank, vốn là điểm nghẽn được
-chỉ ra ở chương \ref{ch:ketqua}. Hiện tại, hệ thống đang dùng các mô hình embedding và
-reranker \emph{nguyên bản (pre-trained, off-the-shelf)}; việc fine-tune chúng là nội dung
-đề xuất của báo cáo.
+Trong một hệ \rag, có \emph{ba loại mô hình} có thể được fine-tune với mục tiêu khác nhau:
+(i) \textbf{LLM} sinh câu trả lời -- điều chỉnh hành vi, phong cách và định dạng nghiệp vụ;
+(ii) \textbf{embedding model} -- cải thiện chất lượng biểu diễn để dense retrieval chính xác
+hơn; và (iii) \textbf{reranker} -- cải thiện xếp hạng để giữ đúng chunk trong top-$k$. Hai
+loại sau tác động trực tiếp vào khâu retrieval/rerank, vốn là điểm nghẽn được chỉ ra ở chương
+\ref{ch:ketqua}. Trong khi LLM và reranker vẫn dừng ở mức \emph{đề xuất}, pipeline cho
+\emph{embedding model} đã được \emph{thí điểm triển khai và đánh giá} trên một bộ dữ liệu
+Thủ tục Hành chính (TTHC) tiếng Việt; phần này trình bày thiết kế chung, còn cấu hình và kết
+quả thí điểm lần lượt được báo cáo ở các chương \ref{ch:trienkhai} và \ref{ch:ketqua}.
 
 \subsection{Thu thập và chuẩn bị dữ liệu}
 
-Dữ liệu huấn luyện được tổng hợp từ ba nguồn: (i) log hội thoại thực tế giữa người dùng và
-hệ thống, sau khi lọc và ẩn thông tin định danh cá nhân (PII); (ii) các cặp hỏi -- đáp chuẩn
-do chuyên gia nghiệp vụ xây dựng; và (iii) dữ liệu tổng hợp do mô hình mạnh sinh ra có kiểm
-duyệt. Tùy loại mô hình, dữ liệu được định dạng khác nhau:
+Với LLM (đề xuất), dữ liệu huấn luyện được tổng hợp từ ba nguồn: (i) log hội thoại thực tế
+giữa người dùng và hệ thống, sau khi lọc và ẩn thông tin định danh cá nhân (PII); (ii) các
+cặp hỏi -- đáp chuẩn do chuyên gia nghiệp vụ xây dựng; và (iii) dữ liệu tổng hợp do mô hình
+mạnh sinh ra có kiểm duyệt. Tùy loại mô hình, dữ liệu được định dạng khác nhau:
 
 \begin{itemize}
   \item \textbf{Với LLM:} định dạng theo mẫu hội thoại (instruction -- response).
@@ -217,18 +217,35 @@ kiệm bộ nhớ. Sau huấn luyện, adapter có thể được gộp (merge) 
 như một adapter riêng trong vLLM. Mục tiêu là điều chỉnh \emph{hành vi} chứ không nạp tri
 thức (tri thức do \rag{} đảm nhiệm).
 
-\subsection{Fine-tuning embedding model}
+\subsection{Fine-tuning embedding model (đã thí điểm)}
 
-Mục tiêu là tăng Recall@$k$ của dense retrieval bằng cách đưa các biểu diễn của câu hỏi và
-chunk chứa đáp án lại gần nhau hơn. Phương pháp đề xuất là \emph{học tương phản} (contrastive
-learning) với hàm mất mát xếp hạng nhiều mẫu âm (Multiple Negatives Ranking Loss): mỗi cặp
-truy vấn -- chunk dương được đối chiếu với các mẫu âm trong cùng batch (in-batch negatives)
-và các hard negatives. Mô hình nền là Qwen3-Embedding; có thể fine-tune toàn bộ hoặc chỉ
-tinh chỉnh lớp chiếu. Chỉ dẫn (instruction) chỉ áp dụng cho phía truy vấn, giữ nhất quán với
-lúc suy luận.
+Mục tiêu là tăng Recall@$k$ của dense retrieval bằng cách đưa biểu diễn câu hỏi và chunk
+chứa đáp án lại gần nhau hơn. Đây là phần duy nhất trong pipeline \ft{} đã được triển khai
+thật: một thí điểm trên mô hình nền Qwen3-Embedding-0.6B~\cite{qwen3embedding2025}, huấn
+luyện và đánh giá trên một bộ dữ liệu TTHC tiếng Việt.
+
+Phương pháp là \emph{học tương phản} (contrastive learning) với hàm mất mát
+\textit{MultipleNegativesRankingLoss}~\cite{henderson2017efficient}: mỗi cặp truy vấn --
+chunk dương được đối chiếu với các mẫu âm trong cùng batch (in-batch negatives) và các
+\emph{hard negative}. Với mỗi truy vấn, hard negative được khai thác bằng chính mô hình nền:
+chọn tối đa $k=3$ chunk có cosine similarity cao nhất nhưng không phải positive, loại các
+trường hợp trùng positive.
+
+Quy trình dữ liệu gồm bốn bước: (i)~chuyển văn bản PDF sang Markdown rồi cắt theo cấu trúc
+mục (\emph{chunking}) và nhúng bằng mô hình nền; (ii)~sinh truy vấn tổng hợp bằng LLM cho
+từng chunk; (iii)~khai thác hard negative như trên; và (iv)~tạo bộ ba
+$(\text{query},\text{positive},\text{negative})$ và chia tập \emph{theo văn bản}
+(document-level) để tránh rò rỉ giữa tập huấn luyện và kiểm định.
+
+Ta dùng LoRA~\cite{hu2021lora} thay vì fine-tune toàn phần để tiết kiệm bộ nhớ và dễ đóng
+gói adapter độc lập: gắn LoRA vào bảy ma trận chiếu của mỗi khối attention/FFN
+($\{q,k,v,o,\text{gate},\text{up},\text{down}\}$) với hạng $r=32$, $\alpha=32$. Đầu ra
+pooling là \emph{last-token} và vector được chuẩn hoá L2. Chỉ dẫn (instruction) chỉ áp dụng
+cho phía truy vấn, giữ nhất quán giữa khai thác negative, huấn luyện và đánh giá.
 
 Sau khi thay embedding model, cần \emph{đánh giá lại toàn bộ chỉ mục} (re-embed corpus) và đo
-lại Recall@$k$, MRR để xác nhận cải thiện trước khi đưa vào sản xuất.
+lại Recall@$k$, MRR để xác nhận cải thiện trước khi đưa vào sản xuất. Cấu hình chi tiết được
+trình bày ở mục \ref{sec:cai-dat-ft} và kết quả ở mục \ref{sec:kq-ft}.
 
 \subsection{Fine-tuning reranker}
 
@@ -266,9 +283,10 @@ hoặc dùng LoRA. Đánh giá bằng Recall@5, MRR và nDCG.
 \end{figure}
 
 \begin{ghichu}
-Ghi chú minh bạch: pipeline \ft{} trong báo cáo là \emph{thiết kế đề xuất}; các kết quả liên
-quan ở chương \ref{ch:ketqua} (nếu có) được ghi rõ là kết quả minh họa, không phải kết quả
-huấn luyện thật trên hạ tầng VNPost.
+Ghi chú minh bạch: với LLM và reranker, pipeline \ft{} trong báo cáo là \emph{thiết kế đề
+xuất}, chưa huấn luyện thật. Với embedding model, báo cáo đã \emph{thí điểm huấn luyện và
+đánh giá thật} Qwen3-Embedding-0.6B trên một bộ dữ liệu TTHC tiếng Việt; kết quả này độc lập
+với hạ tầng và corpus sản xuất của VNPost, nhằm kiểm chứng tính khả thi của pipeline.
 \end{ghichu}
 
 \section{Kiến trúc hybrid RAG + Fine-tuning}

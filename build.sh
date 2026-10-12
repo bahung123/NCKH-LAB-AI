@@ -2,7 +2,7 @@
 # build.sh — biên dịch báo cáo.
 # Ưu tiên xelatex (TeX Live/Overleaf-local); nếu không có, dùng Tectonic.
 set -euo pipefail
-TECTONIC="${TECTONIC:-/tmp/opencode/tectonic}"
+TECTONIC="${TECTONIC:-$HOME/.local/bin/tectonic}"
 
 if command -v xelatex >/dev/null 2>&1; then
   xelatex -interaction=nonstopmode main.tex
