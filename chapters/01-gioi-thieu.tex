@@ -6,10 +6,10 @@
 
 Trong những năm gần đây, chuyển đổi số đã trở thành một trong những định hướng
 chiến lược trọng tâm của ngành bưu chính -- viễn thông Việt Nam. Tổng công ty Bưu
-điện Việt Nam (\vnpost, sau đây gọi tắt là VNPost) vận hành một mạng lưới rộng khắp
+điện Việt Nam (\vnpost, sau đây gọi tắt là Vietnam Post) vận hành một mạng lưới rộng khắp
 với hàng nghìn điểm phục vụ, hàng chục nghìn lao động và một danh mục dịch vụ đa
 dạng: bưu chính, chuyển phát nhanh (EMS), logistics, tài chính bưu chính và các dịch
-vụ công. Song song với hoạt động vận hành, VNPost sở hữu một khối lượng tài liệu
+vụ công. Song song với hoạt động vận hành, Vietnam Post sở hữu một khối lượng tài liệu
 nghiệp vụ nội bộ rất lớn, bao gồm quy trình nghiệp vụ, quyết định, công văn hướng dẫn,
 biểu phí dịch vụ, quy định về hàng hóa cấm gửi, chính sách bồi thường và các tiêu chuẩn
 chất lượng phát.
@@ -42,11 +42,11 @@ hạn chế này là:
   nghiệp vụ và định dạng mong muốn.
 \end{itemize}
 
-Đối với một tổ chức như VNPost, bài toán đặt ra không chỉ là kỹ thuật mà còn là bảo mật
+Đối với một tổ chức như Vietnam Post, bài toán đặt ra không chỉ là kỹ thuật mà còn là bảo mật
 dữ liệu: tài liệu nghiệp vụ nội bộ và thông tin khách hàng không được phép rời khỏi hạ
 tầng của Tổng công ty. Điều này dẫn tới yêu cầu triển khai mô hình cục bộ
 (on-premise) thay vì gọi các dịch vụ đám mây bên ngoài. Báo cáo này xuất phát từ chính
-những yêu cầu thực tiễn đó: nghiên cứu và triển khai một trợ lý ảo thông minh cho VNPost,
+những yêu cầu thực tiễn đó: nghiên cứu và triển khai một trợ lý ảo thông minh cho Vietnam Post,
 kết hợp \rag{} và \ft, có khả năng trả lời chính xác, ngữ cảnh hóa dựa trên tài liệu nội
 bộ, vận hành an toàn trên hạ tầng riêng và có thể mở rộng theo nhu cầu nghiệp vụ.
 
@@ -58,7 +58,7 @@ bộ, vận hành an toàn trên hạ tầng riêng và có thể mở rộng th
   \item Hệ thống hóa cơ sở lý thuyết về chatbot/trợ lý ảo, mô hình ngôn ngữ lớn, kỹ thuật
   \rag{} và kỹ thuật \ft, làm rõ ưu nhược điểm và phạm vi áp dụng của từng hướng tiếp cận.
   \item Thiết kế một kiến trúc trợ lý ảo multi-agent phù hợp với đặc thù dữ
-  liệu và nghiệp vụ của VNPost, trong đó các agent chuyên biệt đảm nhận các miền nghiệp
+  liệu và nghiệp vụ của Vietnam Post, trong đó các agent chuyên biệt đảm nhận các miền nghiệp
   vụ khác nhau và giao tiếp qua các giao thức chuẩn hóa.
   \item Triển khai và thực nghiệm một pipeline \rag{} lai kết hợp sparse retrieval BM25 và
   dense retrieval trên vector database, có bước rerank, nhằm tạo câu trả lời bám
@@ -67,9 +67,8 @@ bộ, vận hành an toàn trên hạ tầng riêng và có thể mở rộng th
   reranker -- trong đó thí điểm huấn luyện và đánh giá thật embedding model; cùng tiêu chí
   quyết định khi nào nên dùng \rag, khi nào nên dùng mô hình đã fine-tuning, và cách kết hợp
   hai hướng tiếp cận trong một kiến trúc hybrid.
-  \item Đánh giá hệ thống bằng các thước đo định lượng (Recall@k, MRR, các thước đo RAGAS,
-  đánh giá bởi mô hình ngôn ngữ) và định tính (case study hội thoại), từ đó rút ra bài học
-  triển khai và đề xuất lộ trình phát triển.
+  \item Đánh giá hệ thống bằng các thước đo retrieval định lượng (Recall@k, MRR) và định tính
+  (case study hội thoại), từ đó rút ra bài học triển khai và đề xuất lộ trình phát triển.
 \end{enumerate}
 
 \section{Đối tượng và phạm vi nghiên cứu}
@@ -83,18 +82,17 @@ và hạ tầng phục vụ mô hình.
 
 \subsection{Phạm vi nghiên cứu}
 
-Đề tài tập trung vào miền dữ liệu và nghiệp vụ của VNPost, bao gồm:
+Đề tài tập trung vào miền dữ liệu và nghiệp vụ của Vietnam Post, bao gồm:
 
 \begin{itemize}
   \item \textbf{Tài liệu văn thư và quy trình nội bộ:} các quyết định, công văn, quy trình
   nghiệp vụ (tập thử nghiệm gồm 17 tài liệu văn thư đại diện).
   \item \textbf{Tài liệu sản phẩm -- dịch vụ:} biểu phí, quy định hàng hóa cấm gửi, chính
-  sách bồi thường, thời gian toàn trình (tập thử nghiệm gồm 119 tài liệu).
+  sách bồi thường, thời gian toàn trình.
   \item \textbf{Tài liệu dịch vụ chuyển phát nhanh EMS:} các quyết định biểu phí, quy định
-  hàng hóa đặc biệt, chính sách bồi thường EMS (khoảng 30 tài liệu).
+  hàng hóa đặc biệt, chính sách bồi thường EMS.
   \item \textbf{Nghiệp vụ tra cứu:} tra cứu tình trạng bưu gửi, tra cứu thông tin bưu cục,
   và tra cứu chất lượng phát.
-  \item \textbf{Bộ đánh giá:} bộ gồm 99 cặp câu hỏi -- đáp án tham chiếu cho miền EMS.
 \end{itemize}
 
 Về mặt kỹ thuật, đề tài giới hạn ở các mô hình mã nguồn mở phục vụ cục bộ, không sử dụng
@@ -108,14 +106,13 @@ các mô hình thương mại qua API đám mây, nhằm bảo đảm yêu cầu
   \item \textbf{Nghiên cứu tài liệu:} khảo sát các công trình khoa học và tài liệu kỹ thuật
   về Transformer, \rag, fine-tuning, LoRA/QLoRA, các thước đo đánh giá và hạ tầng phục vụ
   inference, nhằm xây dựng nền tảng lý thuyết và lựa chọn công nghệ.
-  \item \textbf{Phân tích và thiết kế hệ thống:} phân tích yêu cầu nghiệp vụ của VNPost,
+  \item \textbf{Phân tích và thiết kế hệ thống:} phân tích yêu cầu nghiệp vụ của Vietnam Post,
   từ đó thiết kế kiến trúc multi-agent, pipeline \rag{} và pipeline \ft{} cùng kiến trúc hybrid.
   \item \textbf{Thực nghiệm:} triển khai hệ thống thử nghiệm, xây dựng các pipeline xử lý
   dữ liệu -- từ nhận dạng ký tự quang học (OCR), chuẩn hóa tài liệu, chunking, embedding
   vector, đến hybrid retrieval và rerank; tiến hành đo đạc trên dữ liệu nội bộ.
-  \item \textbf{Đánh giá định lượng:} sử dụng các thước đo retrieval (Recall@k, MRR), các
-  thước đo sinh văn bản (bộ thước đo RAGAS) và đánh giá bởi mô hình ngôn ngữ (LLM-as-judge);
-  đo hiệu năng inference của hệ thống phục vụ.
+  \item \textbf{Đánh giá định lượng:} sử dụng các thước đo retrieval (Recall@k, MRR) và đo
+  hiệu năng inference của hệ thống phục vụ.
   \item \textbf{Đánh giá định tính:} phân tích các tình huống hội thoại thực tế, đánh giá
   mức độ hữu ích của câu trả lời và tính khả thi khi triển khai ở quy mô lớn.
   \item \textbf{Ước lượng hiệu quả:} ước tính lợi ích kinh tế -- xã hội dựa trên thời gian
@@ -134,12 +131,12 @@ Các đóng góp chính của đề tài bao gồm:
   và \ft{} cho miền bưu chính, có khả năng mở rộng và bảo đảm dữ liệu nội bộ không rời khỏi
   hạ tầng tổ chức.
   \item \textbf{Về thực nghiệm:} triển khai và đo đạc trên dữ liệu và nghiệp vụ thực tế của
-  VNPost, cung cấp bằng chứng định lượng về hiệu quả của từng thành phần (sparse retrieval,
+  Vietnam Post, cung cấp bằng chứng định lượng về hiệu quả của từng thành phần (sparse retrieval,
   dense retrieval, rerank) và chỉ ra điểm nghẽn cần cải thiện; thí điểm fine-tune embedding
   model cho truy xuất tiếng Việt, đạt mức cải thiện tương đối khoảng 29--33\% trên các chỉ số
   Accuracy@1, Accuracy@5 và NDCG@10.
-  \item \textbf{Về đánh giá:} xây dựng quy trình đánh giá kết hợp thước đo retrieval, thước
-  đo RAGAS và đánh giá bởi LLM, phù hợp với đặc thù tiếng Việt và miền nghiệp vụ hẹp.
+  \item \textbf{Về đánh giá:} xây dựng quy trình đánh giá retrieval tái lập đúng đường đi sản
+  xuất kèm phân tách lỗi retrieval/rerank, phù hợp với đặc thù tiếng Việt và miền nghiệp vụ hẹp.
   \item \textbf{Về thực tiễn:} đề xuất lộ trình triển khai và ước lượng hiệu quả kinh tế,
   giúp tổ chức ra quyết định đầu tư và mở rộng hệ thống.
 \end{itemize}
@@ -154,12 +151,12 @@ Ngoài phần mở đầu và phụ lục, báo cáo được tổ chức thành
   \item \textbf{Chương 2 -- Cơ sở lý thuyết:} hệ thống hóa kiến thức về chatbot, LLM, \rag, \ft,
   kiến trúc hybrid, thước đo đánh giá và nền tảng triển khai.
   \item \textbf{Chương 3 -- Kiến trúc hệ thống đề xuất:} phân tích bài toán, yêu cầu và thiết kế
-  kiến trúc multi-agent, pipeline \rag, pipeline \ft{} và kiến trúc hybrid cho VNPost.
+  kiến trúc multi-agent, pipeline \rag, pipeline \ft{} và kiến trúc hybrid cho Vietnam Post.
   \item \textbf{Chương 4 -- Triển khai thực nghiệm:} mô tả môi trường, dữ liệu, cấu hình \rag,
   thiết kế \ft, triển khai multi-agent và hệ thống quan sát.
   \item \textbf{Chương 5 -- Kết quả và đánh giá:} trình bày kết quả retrieval, kết quả fine-tune
-  embedding model, kết quả sinh văn bản, so sánh các hướng tiếp cận, hiệu năng hệ thống, case
-  study và hiệu quả kinh tế -- xã hội.
+  embedding model, so sánh các hướng tiếp cận, hiệu năng hệ thống, case study và hiệu quả
+  kinh tế -- xã hội.
   \item \textbf{Chương 6 -- Kết luận và hướng phát triển:} tóm tắt kết quả, nêu hạn chế và đề xuất
   hướng phát triển.
 \end{itemize}

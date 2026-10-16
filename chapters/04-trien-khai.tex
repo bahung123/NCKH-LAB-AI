@@ -30,13 +30,20 @@ Qdrant & Vector database, lưu dense vector và sparse \\
 Kubernetes & Điều phối container, mở rộng và ổn định dịch vụ \\
 Docker Compose & Triển khai cục bộ phục vụ phát triển và thử nghiệm \\
 MLflow & Quản lý phiên bản prompt và gateway \\
-Langfuse / Grafana Tempo & Thu thập và trực quan hóa inference trace \\
+Langfuse & Thu thập và trực quan hóa inference trace \\
 OpenTelemetry & Chuẩn thu thập trace, metric, log \\
 Airflow & Lập lịch thu thập và cập nhật dữ liệu định kỳ \\
 PostgreSQL & Lưu trữ dữ liệu nghiệp vụ (bưu cục, tracking) \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/hinh-4-1-langfuse-assistant.png}
+\caption{Giao diện Langfuse và trợ lý AI tích hợp, dùng để quan sát và phân tích phiên hội thoại.}
+\label{fig:langfuse-assistant}
+\end{figure}
 
 \section{Dữ liệu}
 \label{sec:dulieu}
@@ -67,13 +74,10 @@ chuẩn hóa, mỗi tài liệu được sinh thêm một tệp Markdown và g�
 ngày, tóm tắt). Kho văn thư gồm các quyết định và công văn về cước phí, thời gian toàn
 trình, hàng hóa cấm gửi và chính sách bồi thường.
 
-\subsection{Bộ đánh giá}
+\subsection{Bộ mẫu đánh giá retrieval}
 
-Bộ đánh giá cho miền EMS gồm 99 cặp câu hỏi -- đáp án tham chiếu, được trích từ một bảng
-gồm hơn 400 dòng dữ liệu thô và lọc lại còn 99 cặp sử dụng được. Bộ này được dùng cho cả
-đánh giá retrieval lẫn đánh giá sinh văn bản. Ngoài ra, một bộ mẫu nhỏ (6 câu hỏi) được dùng
-để đánh giá retrieval chi tiết theo từng nhánh (BM25, dense) và một bộ mẫu 3 câu cho đánh
-giá agent bằng LLM-as-judge.
+Đánh giá retrieval sử dụng một bộ mẫu nhỏ (6 câu hỏi) với đáp án tham chiếu, dùng để kiểm
+tra chi tiết theo từng nhánh (BM25, dense), tập ứng viên sau khi hợp và bước rerank.
 
 \subsection{Tiền xử lý}
 
@@ -295,6 +299,13 @@ chủ đề: yêu cầu trực tiếp, khiếu nại/bồi thường, phản h�
 dưới dạng JSON có thể đọc bằng máy, bao gồm thông tin cần thu thập và chính sách theo giờ
 hành chính, giúp việc định tuyến nhất quán và dễ bảo trì.
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/hinh-4-2-chatbot-mipo.png}
+\caption{Giao diện trợ lý ảo MiPo: khung hội thoại, danh sách phiên và các nhóm nghiệp vụ được hỗ trợ.}
+\label{fig:chatbot-mipo}
+\end{figure}
+
 \section{Quan sát với OTel Gateway}
 \label{sec:observability}
 
@@ -303,14 +314,9 @@ hành chính, giúp việc định tuyến nhất quán và dễ bảo trì.
 OTel Gateway được cài đặt bằng image \texttt{otel/\allowbreak opentelemetry-collector-contrib} với một
 tệp cấu hình gồm ba phần: \emph{receivers}, \emph{processors} và \emph{exporters}. Receiver
 \texttt{otlp} nhận vết qua gRPC ở cổng 4317 và HTTP ở cổng 4318; processor \texttt{batch}
-gom các vết trước khi gửi. Hai pipeline chính được cấu hình:
-
-\begin{itemize}
-  \item \texttt{traces}: chuyển vết thô tới backend lưu trữ (debug, Tempo).
-  \item \texttt{traces/langfuse}: đi qua processor \texttt{transform/langfuse} ánh xạ
-  attribute trung lập sang data model của Langfuse, rồi export bằng
-  \texttt{otlphttp/langfuse} tới endpoint ingest của Langfuse.
-\end{itemize}
+gom các vết trước khi gửi. Pipeline \texttt{traces/langfuse} đi qua processor
+\texttt{transform/langfuse} để ánh xạ attribute trung lập sang data model của Langfuse,
+rồi export bằng \texttt{otlphttp/langfuse} tới endpoint ingest của Langfuse.
 
 Exporter \texttt{otlphttp} tự POST tới \texttt{\{endpoint\}/v1/traces} với header xác thực
 Basic, kèm \texttt{sending\_queue} (kích thước 1000) và \texttt{retry\_on\_failure} (chu kỳ
@@ -360,11 +366,26 @@ collector và khởi động lại collector -- không cần sửa code agent v�
 
 \subsection{Quy trình sử dụng}
 
-Vết được xem trên Langfuse UI ở các tab Traces, Sessions và Agent Graph; trên Grafana có
-thể truy vấn bằng TraceQL theo \texttt{resource.service.name}. Thông tin phiên và người
-dùng được truyền qua OTel Baggage trong carrier \texttt{otel\_context} gửi kèm theo A2A/MCP;
+Vết được xem trên Langfuse UI ở các tab Traces, Sessions và Agent Graph. Thông tin phiên và
+người dùng được truyền qua OTel Baggage trong carrier \texttt{otel\_context} gửi kèm theo A2A/MCP;
 phía nhận, baggage processor copy hai entry này lên mọi span, kể cả span sinh ra ở process
 khác. Nhờ đó, một hội thoại nhiều lượt đi qua nhiều agent vẫn gom thành một session.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/hinh-4-3-langfuse-traces.png}
+\caption{Danh sách trace trên Langfuse (lọc \texttt{isRootObservation=true}): mỗi dòng là một
+lượt \texttt{/chat}, kèm agent xử lý và độ trễ.}
+\label{fig:langfuse-traces}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/hinh-4-4-langfuse-trace-detail.png}
+\caption{Chi tiết một trace: các bước \texttt{generate-response}, \texttt{query\_knowledge\_base}
+và lời gọi agent, kèm nội dung hội thoại và trích dẫn ở panel phải.}
+\label{fig:langfuse-trace-detail}
+\end{figure}
 
 \begin{ghichu}
 Quy trình đánh giá (eval) chủ động tắt OpenTelemetry, để vết của quá trình đánh giá không
@@ -398,7 +419,7 @@ chính được triển khai.
 \midrule
 Workload mô hình (GPU) & LLM, embedding model, reranker, OCR \\
 Workload agent (CPU) & host agent, agent RAG, agent tracking, agent bưu cục \\
-Quan sát & Langfuse, Grafana, OTel Gateway \\
+Quan sát & Langfuse, OTel Gateway \\
 Dữ liệu & Qdrant, PostgreSQL, MinIO \\
 Nền tảng & Airflow, mem0, registry nội bộ \\
 \bottomrule

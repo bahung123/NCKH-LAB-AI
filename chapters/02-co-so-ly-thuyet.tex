@@ -392,7 +392,8 @@ và khi nào kết hợp. Chi tiết kiến trúc được trình bày ở chư�
 \section{Các thước đo đánh giá}
 \label{sec:metrics}
 
-Đánh giá một hệ \rag{} cần tách thành hai khâu: chất lượng retrieval và chất lượng sinh.
+Đánh giá một hệ \rag{} tập trung trước hết vào chất lượng retrieval -- khâu quyết định
+câu trả lời có đủ căn cứ hay không.
 
 \subsection{Thước đo retrieval}
 
@@ -406,24 +407,6 @@ và khi nào kết hợp. Chi tiết kiến trúc được trình bày ở chư�
   \item \textbf{nDCG:} thước đo có trọng số theo vị trí, phù hợp khi đánh giá chất lượng
   xếp hạng với mức độ liên quan khác nhau.
 \end{itemize}
-
-\subsection{Thước đo sinh văn bản}
-
-Bộ thước đo RAGAS \cite{es2023ragas} đánh giá hệ \rag{} không cần đáp án tham chiếu đầy đủ:
-
-\begin{itemize}
-  \item \textbf{Faithfulness (độ trung thực):} mức độ câu trả lời được hỗ trợ bởi ngữ cảnh
-  retrieval, phản ánh mức độ hallucination.
-  \item \textbf{Answer Relevancy (độ liên quan câu trả lời):} mức độ câu trả lời đúng trọng
-  tâm câu hỏi.
-  \item \textbf{Context Precision:} tỉ lệ context chunk thực sự hữu ích.
-  \item \textbf{Context Recall:} mức độ ngữ cảnh bao phủ đáp án tham chiếu.
-\end{itemize}
-
-Ngoài ra, \emph{LLM-as-judge} sử dụng một mô hình ngôn ngữ mạnh để cho điểm câu trả lời
-theo thang điểm (ví dụ 0--10) dựa trên đáp án chuẩn, là phương pháp linh hoạt và tiết kiệm
-cho miền hẹp. Các thước đo truyền thống như BLEU và ROUGE có thể dùng bổ sung nhưng không
-phản ánh tốt tính đúng đắn ngữ nghĩa trong hỏi đáp mở.
 
 \section{Nền tảng triển khai}
 \label{sec:infra}
@@ -451,8 +434,7 @@ kết quả. Hai giao thức này tạo nên nền tảng cho kiến trúc multi
 \subsection{Quan sát hệ thống và quản lý prompt}
 
 OpenTelemetry (OTel) \cite{otel2024} cung cấp chuẩn thu thập vết (trace), chỉ số (metric) và log; dữ liệu
-được đẩy tới các nền tảng như Langfuse \cite{langfuse2024} hoặc Grafana Tempo để giám sát inference flow, latency
-và lượng token. MLflow Prompt Registry \cite{mlflow2024} cho phép quản lý phiên bản prompt tập trung, giúp
+được đẩy tới Langfuse \cite{langfuse2024} để giám sát inference flow, latency và lượng token. MLflow Prompt Registry \cite{mlflow2024} cho phép quản lý phiên bản prompt tập trung, giúp
 tách cấu hình khỏi mã nguồn và kiểm soát thay đổi prompt theo môi trường (ví dụ nhãn
 \texttt{@production}).
 
@@ -460,4 +442,4 @@ tách cấu hình khỏi mã nguồn và kiểm soát thay đổi prompt theo m�
 \addcontentsline{toc}{section}{Kết chương}
 Chương này đã hệ thống hóa nền tảng lý thuyết về chatbot, LLM, \rag, fine-tuning, kiến trúc
 lai, thước đo đánh giá và nền tảng triển khai. Đây là cơ sở để chương tiếp theo phân tích
-bài toán cụ thể của VNPost và thiết kế kiến trúc hệ thống đề xuất.
+bài toán cụ thể của Vietnam Post và thiết kế kiến trúc hệ thống đề xuất.

@@ -1,4 +1,4 @@
-# Kế hoạch triển khai: Báo cáo NCKH — Triển khai AI Chatbot/Trợ lý ảo cho VNPost (RAG & Fine-tuning)
+# Kế hoạch triển khai: Báo cáo NCKH — Triển khai AI Chatbot/Trợ lý ảo cho Vietnam Post (RAG & Fine-tuning)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -176,8 +176,8 @@ git commit -q -m "chore: khung dự án LaTeX báo cáo NCKH"
 Nội dung bắt buộc:
 - Bìa với placeholder: `[TÊN TRƯỜNG/ĐƠN VỊ]`, `[KHOA/BỘ MÔN]`, `[HỌ VÀ TÊN TÁC GIẢ]`, `[MSSV]`, `[GVHD/NGƯỜI HƯỚNG DẪN]`, `[NĂM]`, tên đề tài đầy đủ.
 - **Lời cảm ơn** (1 đoạn).
-- **Tóm tắt** tiếng Việt (~200 từ) + **Abstract** tiếng Anh (~150 từ): nêu bối cảnh VNPost, mục tiêu, phương pháp RAG hybrid + fine-tuning, kết quả chính (Recall@5 sau rerank 50%, MRR 0.3149, Dense recall 100%; LLM-judge; đề xuất kiến trúc lai).
-- **Danh mục từ viết tắt**: LLM, RAG, RAGAS, BM25, MRR, nDCG, PEFT, LoRA, QLoRA, SFT, DPO, RLHF, OCR, MCP, A2A, vLLM, FP8, Qdrant, VNPost, EMS, CSKH, K8s, OTel.
+- **Tóm tắt** tiếng Việt (~200 từ) + **Abstract** tiếng Anh (~150 từ): nêu bối cảnh Vietnam Post, mục tiêu, phương pháp RAG hybrid + fine-tuning, kết quả chính (Recall@5 sau rerank 50%, MRR 0.3149, Dense recall 100%; LLM-judge; đề xuất kiến trúc lai).
+- **Danh mục từ viết tắt**: LLM, RAG, RAGAS, BM25, MRR, nDCG, PEFT, LoRA, QLoRA, SFT, DPO, RLHF, OCR, MCP, A2A, vLLM, FP8, Qdrant, Vietnam Post, EMS, CSKH, K8s, OTel.
 
 - [ ] **Step 2: Biên dịch và kiểm tra**
 
@@ -206,7 +206,7 @@ git add chapters/00-frontmatter.tex && git commit -q -m "docs: phần đầu bá
 1.2 Mục tiêu nghiên cứu (4–5 gạch đầu dòng).
 1.3 Đối tượng & phạm vi (corpus văn thư 17 tài liệu, corpus SPDV 119 tài liệu, corpus EMS ~30 tài liệu; nghiệp vụ tra cứu bưu gửi/bưu cục).
 1.4 Phương pháp nghiên cứu (nghiên cứu tài liệu; thiết kế kiến trúc; triển khai multi-agent MCP/A2A; thực nghiệm RAG; đánh giá định lượng + định tính; thiết kế fine-tuning minh họa).
-1.5 Đóng góp (kiến trúc lai; quy trình đánh giá; bằng chứng thực nghiệm tại VNPost).
+1.5 Đóng góp (kiến trúc lai; quy trình đánh giá; bằng chứng thực nghiệm tại Vietnam Post).
 1.6 Cấu trúc báo cáo (liệt kê 6 chương).
 
 - [ ] **Step 2: Biên dịch và kiểm tra**
@@ -277,7 +277,7 @@ git add chapters/02-co-so-ly-thuyet.tex references.bib && git commit -q -m "docs
 
 - [ ] **Step 1: Viết mục 3.1–3.2**
 
-Đặc thù bài toán VNPost (văn bản hành chính, quyết định, biểu phí EMS, quy định hàng cấm, chính sách bồi thường; nghiệp vụ tra cứu bưu gửi, bưu cục). Yêu cầu chức năng (hỏi–đáp ngữ cảnh, tra cứu, định tuyến agent, tạo ticket) và phi chức năng (chính xác, độ trễ, bảo mật on-prem, khả mở rộng).
+Đặc thù bài toán Vietnam Post (văn bản hành chính, quyết định, biểu phí EMS, quy định hàng cấm, chính sách bồi thường; nghiệp vụ tra cứu bưu gửi, bưu cục). Yêu cầu chức năng (hỏi–đáp ngữ cảnh, tra cứu, định tuyến agent, tạo ticket) và phi chức năng (chính xác, độ trễ, bảo mật on-prem, khả mở rộng).
 
 - [ ] **Step 2: Viết mục 3.3 (multi-agent) + Hình TikZ**
 

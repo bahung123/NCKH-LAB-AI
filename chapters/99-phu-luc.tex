@@ -9,7 +9,7 @@ agent \rag. Prompt thực tế được quản lý tập trung qua MLflow Prompt
 \addcontentsline{toc}{section}{A.1. Prompt agent điều phối}
 
 \begin{prompt}
-Bạn là trợ lý ảo của Tổng công ty Bưu điện Việt Nam (VNPost).
+Bạn là trợ lý ảo của Tổng công ty Bưu điện Việt Nam (Vietnam Post).
 Nhiệm vụ: hiểu yêu cầu người dùng, duy trì ngữ cảnh hội thoại, và định
 tuyến đến agent chuyên biệt phù hợp.
 
@@ -31,7 +31,7 @@ Nguyên tắc:
 \addcontentsline{toc}{section}{A.2. Prompt agent RAG}
 
 \begin{prompt}
-Bạn là agent hỏi đáp trên tài liệu nội bộ của VNPost.
+Bạn là agent hỏi đáp trên tài liệu nội bộ của Vietnam Post.
 
 Bạn được cung cấp:
 - Câu hỏi của người dùng.
@@ -97,7 +97,7 @@ Vector database & Qdrant v1.16.1 (dense COSINE + sparse IDF) \\
 Cơ sở dữ liệu nghiệp vụ & PostgreSQL \\
 Phục vụ inference & vLLM với PagedAttention và FP8 \\
 Quản lý prompt & MLflow Prompt Registry (\texttt{@production}) \\
-Quan sát & OpenTelemetry, Langfuse, Grafana Tempo \\
+Quan sát & OpenTelemetry, Langfuse \\
 Điều phối & Kubernetes, Docker Compose, Airflow \\
 \bottomrule
 \end{tabular}

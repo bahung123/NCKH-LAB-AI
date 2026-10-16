@@ -3,7 +3,7 @@
 \label{ch:kientruc}
 
 Trên nền tảng lý thuyết đã trình bày ở chương \ref{ch:coso}, chương này phân tích bài toán
-cụ thể của VNPost và đề xuất kiến trúc trợ lý ảo. Mục \ref{sec:baigtoan} làm rõ đặc thù
+cụ thể của Vietnam Post và đề xuất kiến trúc trợ lý ảo. Mục \ref{sec:baigtoan} làm rõ đặc thù
 bài toán; mục \ref{sec:yeucau} xác định yêu cầu; mục \ref{sec:multiagent} trình bày kiến
 trúc multi-agent; mục \ref{sec:pipeline-rag} và mục \ref{sec:pipeline-ft} mô tả pipeline
 \rag{} và pipeline \ft; mục \ref{sec:kien-truc-lai} đề xuất kiến trúc hybrid; mục
@@ -11,12 +11,12 @@ trúc multi-agent; mục \ref{sec:pipeline-rag} và mục \ref{sec:pipeline-ft} 
 trình bày kiến trúc quan sát dựa trên OTel Gateway; và mục \ref{sec:k8s} trình bày triển
 khai trên Kubernetes.
 
-\section{Đặc thù bài toán tại VNPost}
+\section{Đặc thù bài toán tại Vietnam Post}
 \label{sec:baigtoan}
 
 \subsection{Đặc điểm dữ liệu nội bộ}
 
-Dữ liệu nội bộ của VNPost có một số đặc điểm ảnh hưởng trực tiếp đến thiết kế hệ thống:
+Dữ liệu nội bộ của Vietnam Post có một số đặc điểm ảnh hưởng trực tiếp đến thiết kế hệ thống:
 
 \begin{itemize}
   \item \textbf{Đa dạng định dạng:} tài liệu tồn tại dưới dạng văn bản số (docx, pdf, txt)
@@ -269,7 +269,7 @@ hoặc dùng LoRA. Đánh giá bằng Recall@5, MRR và nDCG.
 \node[proc,below=13mm of prep] (emb) {Fine-tune embedding\\(contrastive)};
 \node[proc,left=5mm of emb] (llm) {Fine-tune LLM\\(LoRA/QLoRA)};
 \node[proc,right=5mm of emb] (rrk) {Fine-tune reranker\\(cross-encoder)};
-\node[proc,minimum width=7.4cm,below=26mm of emb] (eval) {Đánh giá: RAGAS, LLM-as-judge, Recall@$k$, MRR};
+\node[proc,minimum width=7.4cm,below=26mm of emb] (eval) {Đánh giá: Recall@$k$, MRR};
 \draw[arrow] (data) -- (prep);
 \draw[arrow] (prep) -- (emb);
 \draw[arrow] (prep) -- (llm);
@@ -286,7 +286,7 @@ hoặc dùng LoRA. Đánh giá bằng Recall@5, MRR và nDCG.
 Ghi chú minh bạch: với LLM và reranker, pipeline \ft{} trong báo cáo là \emph{thiết kế đề
 xuất}, chưa huấn luyện thật. Với embedding model, báo cáo đã \emph{thí điểm huấn luyện và
 đánh giá thật} Qwen3-Embedding-0.6B trên một bộ dữ liệu TTHC tiếng Việt; kết quả này độc lập
-với hạ tầng và corpus sản xuất của VNPost, nhằm kiểm chứng tính khả thi của pipeline.
+với hạ tầng và corpus sản xuất của Vietnam Post, nhằm kiểm chứng tính khả thi của pipeline.
 \end{ghichu}
 
 \section{Kiến trúc hybrid RAG + Fine-tuning}
@@ -362,15 +362,14 @@ Collector). Nhờ đó, thêm một backend mới chỉ cần thêm một pipeli
 collector, không phải sửa code agent và không cần restart agent.
 
 Agent phát vết qua OTLP tới collector; collector nhận ở hai giao thức gRPC (cổng 4317) và
-HTTP (cổng 4318). Mỗi backend có một pipeline riêng trong collector.
+HTTP (cổng 4318), rồi chuyển tiếp tới Langfuse.
 
-\subsection{Hai pipeline: backend thô và Langfuse}
+\subsection{Pipeline gửi tới Langfuse}
 
-Pipeline \texttt{traces} chuyển vết thô tới các backend dạng lưu trữ/xuất hiện (debug,
-Tempo). Pipeline \texttt{traces/langfuse} đi qua một \emph{transform processor} ánh xạ
-attribute trung lập sang data model của Langfuse, rồi export qua OTLP/HTTP tới endpoint
-ingest của Langfuse, kèm hàng đợi gửi (sending queue) và cơ chế thử lại (retry on failure)
-để không mất vết khi backend chậm.
+Pipeline \texttt{traces/langfuse} đi qua một \emph{transform processor} ánh xạ attribute
+trung lập sang data model của Langfuse, rồi export qua OTLP/HTTP tới endpoint ingest của
+Langfuse, kèm hàng đợi gửi (sending queue) và cơ chế thử lại (retry on failure) để không
+mất vết khi backend chậm.
 
 Phép ánh xạ chính thực hiện ở collector gồm:
 
@@ -402,14 +401,12 @@ Phép ánh xạ chính thực hiện ở collector gồm:
 ]
 \node[proc] (agent) {Các agent\\(phát vết OTLP)};
 \node[proc,right=of agent] (gw) {OTel Gateway\\(Collector)};
-\node[proc2,above right=12mm and 12mm of gw] (raw) {Backend thô\\(Tempo / debug)};
-\node[proc2,below right=12mm and 12mm of gw] (lf) {Langfuse\\(self-hosted)};
+\node[proc2,right=12mm of gw] (lf) {Langfuse\\(self-hosted)};
 \node[font=\scriptsize,below=1mm of lf] {hiển thị + eval};
 \draw[arrow] (agent) -- (gw);
-\draw[arrow] (gw) -- (raw) node[midway,above,font=\scriptsize] {pipeline \texttt{traces}};
-\draw[arrow] (gw) -- (lf) node[midway,below,font=\scriptsize] {pipeline \texttt{traces/langfuse}};
+\draw[arrow] (gw) -- (lf) node[midway,above,font=\scriptsize] {pipeline \texttt{traces/langfuse}};
 \end{tikzpicture}
-\caption{Kiến trúc quan sát: OTel Gateway là điểm kết nối duy nhất tới các backend.}
+\caption{Kiến trúc quan sát: agent phát vết qua OTel Gateway tới Langfuse.}
 \label{fig:otgateway}
 \end{figure}
 
@@ -469,8 +466,7 @@ cập nhật mô hình hoặc mã agent mà không cần build lại image.
 \node[grp,fit=(host)(spdv)(trk)(buc),label=above:{Node CPU}] (cpu) {};
 
 \node[pod,right=14mm of host] (lf) {Langfuse};
-\node[pod,below=of lf] (gr) {Grafana};
-\node[grp,fit=(lf)(gr),label=above:{Quan sát}] (obs) {};
+\node[grp,fit=(lf),label=above:{Quan sát}] (obs) {};
 \end{tikzpicture}
 \caption{Topologies triển khai trên Kubernetes: workload GPU, workload agent và quan sát.}
 \label{fig:k8s}
@@ -486,7 +482,7 @@ toàn, không làm gián đoạn yêu cầu đang xử lý.
 
 \section*{Kết chương}
 \addcontentsline{toc}{section}{Kết chương}
-Chương này đã phân tích bài toán VNPost, xác định yêu cầu và đề xuất kiến trúc multi-agent
+Chương này đã phân tích bài toán Vietnam Post, xác định yêu cầu và đề xuất kiến trúc multi-agent
 kết hợp \rag{} lai với \ft{} theo mô hình hybrid, cùng hai thành phần nền tảng: kiến trúc
 quan sát dựa trên OTel Gateway và cách triển khai trên Kubernetes. Chương tiếp theo mô tả
 việc triển khai thực nghiệm các thành phần này cùng các tham số cụ thể.

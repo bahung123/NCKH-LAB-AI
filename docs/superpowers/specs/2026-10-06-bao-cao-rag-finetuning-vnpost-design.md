@@ -5,21 +5,21 @@
 - **Ngôn ngữ:** Tiếng Việt
 - **Quy mô mục tiêu:** ~60 trang
 - **Trọng tâm:** RAG và fine-tuning cân bằng; đề xuất kiến trúc lai
-- **Nguồn thực nghiệm:** Hệ thống multi-agent + RAG thực tế tại VNPost (trong `~/Documents`), bỏ qua các dự án LangChain/LangGraph
+- **Nguồn thực nghiệm:** Hệ thống multi-agent + RAG thực tế tại Vietnam Post (trong `~/Documents`), bỏ qua các dự án LangChain/LangGraph
 - **Bìa:** dùng placeholder
 
 ## 1. Mục tiêu & phạm vi
 
-Xây dựng một báo cáo nghiên cứu khoa học hoàn chỉnh, có thực nghiệm, về việc triển khai trợ lý ảo/chatbot thông minh cho Tổng công ty Bưu điện Việt Nam (VNPost) dựa trên:
+Xây dựng một báo cáo nghiên cứu khoa học hoàn chỉnh, có thực nghiệm, về việc triển khai trợ lý ảo/chatbot thông minh cho Tổng công ty Bưu điện Việt Nam (Vietnam Post) dựa trên:
 1. **RAG** (retrieval-augmented generation) — giải pháp đã triển khai thực tế.
 2. **Fine-tuning** (SFT, LoRA/QLoRA) — giải pháp so sánh/đề xuất.
 3. **Kiến trúc lai RAG + fine-tuning** — đề xuất của đề tài.
 
-Phạm vi dữ liệu: văn bản nội bộ VNPost (quy trình, quyết định, biểu phí, quy định bưu chính), nghiệp vụ tra cứu bưu gửi và bưu cục, dịch vụ EMS.
+Phạm vi dữ liệu: văn bản nội bộ Vietnam Post (quy trình, quyết định, biểu phí, quy định bưu chính), nghiệp vụ tra cứu bưu gửi và bưu cục, dịch vụ EMS.
 
 ## 2. Đối tượng đọc & tiêu chí thành công
 
-- Đối tượng: hội đồng/giảng viên chấm NCKH, kỹ sư AI tại VNPost.
+- Đối tượng: hội đồng/giảng viên chấm NCKH, kỹ sư AI tại Vietnam Post.
 - Thành công khi:
   - Đọc hiểu mạch lạc từ cơ sở lý thuyết → kiến trúc → thực nghiệm → kết quả.
   - Có số liệu thực nghiệm cụ thể, có nguồn, không bịa đặt.
@@ -35,7 +35,7 @@ Phạm vi dữ liệu: văn bản nội bộ VNPost (quy trình, quyết định
 - Mục lục, Danh mục hình, Danh mục bảng, Danh mục từ viết tắt.
 
 ### Chương 1 — Giới thiệu (≈6 tr.)
-1.1 Bối cảnh và lý do chọn đề tài (chuyển đổi số VNPost, khối lượng văn bản/tra cứu lớn).
+1.1 Bối cảnh và lý do chọn đề tài (chuyển đổi số Vietnam Post, khối lượng văn bản/tra cứu lớn).
 1.2 Mục tiêu nghiên cứu.
 1.3 Đối tượng và phạm vi nghiên cứu.
 1.4 Phương pháp nghiên cứu (nghiên cứu tài liệu, thiết kế hệ thống, thực nghiệm, đánh giá định lượng/định tính).
@@ -65,7 +65,7 @@ Phạm vi dữ liệu: văn bản nội bộ VNPost (quy trình, quyết định
 2.7 Nền tảng triển khai: vLLM, quantization (FP8), serving on-prem; giao thức MCP, A2A; observability (OpenTelemetry, Langfuse, Grafana); MLflow Prompt Registry.
 
 ### Chương 3 — Kiến trúc hệ thống đề xuất (≈12 tr.)
-3.1 Đặc thù bài toán tại VNPost (dữ liệu hành chính, biểu phí, quy trình ISO, tra cứu bưu gửi/bưu cục, EMS).
+3.1 Đặc thù bài toán tại Vietnam Post (dữ liệu hành chính, biểu phí, quy trình ISO, tra cứu bưu gửi/bưu cục, EMS).
 3.2 Yêu cầu chức năng và phi chức năng (chính xác, ngữ cảnh hóa, bảo mật dữ liệu nội bộ, on-prem, độ trễ).
 3.3 Kiến trúc tổng thể multi-agent: host orchestrator + specialist agents (RAG sản phẩm/dịch vụ, tra cứu bưu gửi, tra cứu bưu cục, chất lượng phát).
 3.4 Pipeline RAG chi tiết (indexing → retrieval hybrid → rerank → generation) với sơ đồ.
@@ -109,7 +109,7 @@ Phạm vi dữ liệu: văn bản nội bộ VNPost (quy trình, quyết định
 ## 4. Danh mục hình & bảng dự kiến
 
 **Hình:**
-- Kiến trúc Transformer; minh họa RAG tổng quát; pipeline indexing; hybrid retrieval + rerank; LoRA; kiến trúc multi-agent VNPost; kiến trúc lai; luồng observability; biểu đồ Recall/MRR; biểu đồ throughput.
+- Kiến trúc Transformer; minh họa RAG tổng quát; pipeline indexing; hybrid retrieval + rerank; LoRA; kiến trúc multi-agent Vietnam Post; kiến trúc lai; luồng observability; biểu đồ Recall/MRR; biểu đồ throughput.
 
 **Bảng:**
 - So sánh RAG vs fine-tuning; bảng tham số RAG; cấu hình LoRA; kết quả retrieval; kết quả LLM-judge/RAGAS; benchmark throughput; tham số mô hình.

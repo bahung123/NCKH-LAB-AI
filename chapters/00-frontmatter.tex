@@ -21,16 +21,16 @@ của Tổng công ty.\par}
 
 {\color{vnpostdark}\rule{\textwidth}{0.8pt}}\\[0.8cm]
 
-{\bfseries BÁO CÁO KỸ THUẬT -- ĐỀ XUẤT TRIỂN KHAI}\\[2.6cm]
+{\bfseries BÁO CÁO KHOA HỌC}\\[2.6cm]
 
 \begin{tabular}{@{}r@{\hspace{8mm}}l@{}}
 \textbf{Kính gửi:} & Ban lãnh đạo Tổng công ty Bưu điện Việt Nam \\[0.22cm]
 \textbf{Đơn vị thực hiện:} & Phòng AI, Trung tâm Đổi mới Sáng tạo \\[0.22cm]
-\textbf{Ngày báo cáo:} & [NGÀY/THÁNG/NĂM] \\
+\textbf{Ngày báo cáo:} & 13/10/2026 \\
 \end{tabular}
 
 \vfill
-{\large\bfseries [NĂM]}
+{\large\bfseries 2026}
 \end{titlepage}
 
 % ===================== LỜI NÓI ĐẦU =====================
@@ -41,7 +41,7 @@ công tác tra cứu, hỏi đáp và hỗ trợ nghiệp vụ là một hướn
 Báo cáo này trình bày kết quả nghiên cứu và đề xuất triển khai một trợ lý ảo thông minh
 dựa trên mô hình ngôn ngữ lớn (LLM) kết hợp kỹ thuật Retrieval-Augmented Generation (RAG)
 và fine-tuning, phục vụ nhu cầu trả lời chính xác, ngữ cảnh hóa dựa trên tài liệu nội bộ
-của Tổng công ty Bưu điện Việt Nam (VNPost).
+của Tổng công ty Bưu điện Việt Nam (Vietnam Post).
 
 Báo cáo được xây dựng trên cơ sở khảo sát hệ thống và dữ liệu thực tế đang vận hành, kết
 hợp phân tích lý thuyết và kết quả thực nghiệm. Các nội dung chính gồm: cơ sở lý thuyết về
@@ -60,7 +60,7 @@ chia sẻ bối cảnh nghiệp vụ và dữ liệu để hoàn thành báo cá
 \chapter*{Tóm tắt điều hành}
 \addcontentsline{toc}{chapter}{Tóm tắt điều hành}
 Trong bối cảnh chuyển đổi số của ngành bưu chính, Tổng công ty Bưu điện Việt Nam
-(VNPost) sở hữu một khối lượng lớn tài liệu nghiệp vụ nội bộ: quy trình, quyết định,
+(Vietnam Post) sở hữu một khối lượng lớn tài liệu nghiệp vụ nội bộ: quy trình, quyết định,
 biểu phí dịch vụ, quy định về hàng hóa và chính sách bồi thường, cùng các nghiệp vụ
 tra cứu bưu gửi và bưu cục. Việc tra cứu thủ công tốn nhiều thời gian, trong khi các
 kênh hỏi đáp truyền thống khó đáp ứng nhu cầu tra cứu tức thời, chính xác và có trích
@@ -75,25 +75,23 @@ chuyên biệt, giao tiếp qua các giao thức MCP và A2A; triển khai pipel
 kèm reranker; đồng thời đề xuất pipeline fine-tuning cho cả ba loại mô hình: LLM (LoRA/QLoRA),
 embedding model và reranker, trong đó thí điểm huấn luyện và đánh giá thật embedding model.
 Toàn bộ mô hình được phục vụ cục bộ (on-premise) bằng vLLM để bảo đảm dữ liệu nội bộ không
-rời khỏi hạ tầng của VNPost.
+rời khỏi hạ tầng của Vietnam Post.
 
 Kết quả triển khai cho thấy dense retrieval mạnh ở việc bắt ngữ nghĩa khi câu hỏi diễn đạt
 khác với từ khóa trong tài liệu, trong khi BM25 bổ trợ tốt cho từ khóa chính xác và số hiệu
 văn bản; hybrid retrieval đảm bảo phạm vi ứng viên đầy đủ. Phân tách lỗi giữa khâu retrieval
 và khâu rerank cho phép định vị rõ điểm cần cải thiện, và quan sát thực tế cho thấy khâu
-rerank đang là điểm nghẽn cần xử lý trước. Với miền EMS, bộ đánh giá gồm 99 câu hỏi đã được
-chuẩn bị và thu thập đầy đủ phản hồi. Ở phần fine-tuning, embedding model đã được thí điểm
+rerank đang là điểm nghẽn cần xử lý trước. Ở phần fine-tuning, embedding model đã được thí điểm
 huấn luyện theo học tương phản và đạt mức cải thiện tương đối khoảng 29--33\% trên các chỉ số
-Accuracy@1, Accuracy@5 và NDCG@10 so với mô hình nền. Báo cáo cũng trình bày hệ thống đánh giá
-sinh văn bản bằng LLM-as-judge và bộ thước đo RAGAS, kết quả hiệu năng của vLLM, hiệu quả vận
-hành theo hướng định tính, và đề xuất kiến trúc hybrid RAG + fine-tuning cùng
+Accuracy@1, Accuracy@5 và NDCG@10 so với mô hình nền. Báo cáo cũng trình bày kết quả hiệu năng
+của vLLM, hiệu quả vận hành theo hướng định tính, và đề xuất kiến trúc hybrid RAG + fine-tuning cùng
 lộ trình phát triển. Kết quả cho thấy RAG là giải pháp phù hợp và khả thi cho tri thức
 động, còn fine-tuning bổ trợ cho phong cách và nghiệp vụ ổn định, và sự kết hợp của hai
 hướng tiếp cận mang lại giá trị thực tiễn cao cho \vnpost.
 
 \vspace{0.4cm}
 \noindent\textbf{Từ khóa:} trợ lý ảo, chatbot, LLM, RAG, fine-tuning, LoRA, hybrid
-retrieval, reranker, multi-agent, VNPost.
+retrieval, reranker, multi-agent, Vietnam Post.
 
 % ===================== DANH MỤC TỪ VIẾT TẮT =====================
 \chapter*{Danh mục từ viết tắt}
@@ -133,11 +131,10 @@ PII & Personally Identifiable Information -- thông tin định danh cá nhân \
 QLoRA & Quantized LoRA -- LoRA trên mô hình lượng tử hóa (quantization) \\
 Qdrant & Vector database mã nguồn mở \\
 RAG & Retrieval-Augmented Generation -- sinh tăng cường truy hồi \\
-RAGAS & Framework đánh giá RAG tự động \\
 RBAC & Role-Based Access Control -- kiểm soát truy cập theo vai trò \\
 RLHF & Reinforcement Learning from Human Feedback \\
 SFT & Supervised Fine-Tuning -- fine-tuning có giám sát \\
 SSO & Single Sign-On -- đăng nhập một lần \\
-VNPost & Tổng công ty Bưu điện Việt Nam \\
+Vietnam Post & Tổng công ty Bưu điện Việt Nam \\
 vLLM & Thư viện phục vụ suy luận LLM hiệu năng cao \\
 \end{longtable}
